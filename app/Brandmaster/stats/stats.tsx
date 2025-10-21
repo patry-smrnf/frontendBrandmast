@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -13,11 +15,12 @@ import { apiFetch } from "@/utils/apiFetch";
 import { tpSampleStats, Item } from "@/types/tpStatsSample";
 import { messageRes } from "@/types/MessageRes";
 import { BrandmasterStatsResponse, mapBrandmasterStatsToLegacy, LegacyTargetType } from "@/types/apiStuff/responses/BrandmasterStatsResponse";
+import { MyCasActionsResponse, Action } from "@/types/apiStuff/responses/MyCasActionsResponse";
 import ContextMenu from "@/components/contextMenu";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import DarkLoadingPage from "@/components/LoadingScreen";
 
-import { Package, Layers2, CircleOff, TrendingUp, AlertTriangle, RefreshCw, CheckCircle, XCircle } from "lucide-react";
+import { Package, Layers2, CircleOff, TrendingUp, AlertTriangle, RefreshCw, CheckCircle, XCircle, Clock, MapPin, Building, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 
 
 interface StatCardProps {
@@ -42,14 +45,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
     return "text-rose-400 bg-rose-500/10";
   };
 
-  const getProgressColor = (eff: number) => {
-    if (eff >= 100) return "from-emerald-500 to-emerald-400";
-    if (eff >= 80) return "from-emerald-500 to-emerald-400";
-    if (eff >= 60) return "from-amber-500 to-amber-400";
-    if (eff >= 40) return "from-orange-500 to-orange-400";
-    return "from-rose-500 to-rose-400";
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -66,7 +61,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
           "group relative overflow-hidden"
         )}
       >
-        {/* Animated background gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
         <CardHeader className="pb-2 relative z-10">
@@ -78,7 +72,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
         </CardHeader>
 
         <CardContent className="space-y-4 relative z-10">
-          {/* Numbers Row */}
           <div className="flex justify-between items-center">
             <div className="flex flex-col">
               <span className="text-xs text-zinc-500 uppercase tracking-wide">Aktualne</span>
@@ -103,7 +96,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
             </div>
           </div>
 
-          {/* Enhanced Progress Bar */}
           <div className="space-y-2">
             <Progress
               value={efficiency}
@@ -119,7 +111,6 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
             </div>
           </div>
 
-          {/* Status indicator */}
           <div className="flex items-center gap-2 text-xs">
             {efficiency >= 100 ? (
               <div className="flex items-center gap-1 text-emerald-400">
@@ -149,10 +140,24 @@ const StatCard: React.FC<StatCardProps> = ({ title, actual, target, icon, loadin
   );
 };
 
+// Helper function to parse time string to total minutes
+const parseTimeToMinutes = (timeStr: string): number => {
+  const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes + seconds / 60;
+};
+
+// Helper function to format total minutes back to HH:MM format
+const formatMinutesToTime = (totalMinutes: number): string => {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.floor(totalMinutes % 60);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
 const StatsPage: React.FC = () => {
   // State management
   const [brandmasterData, setBrandmasterData] = useState<BrandmasterStatsResponse | null>(null);
   const [sampleStats, setSampleStats] = useState<tpSampleStats | null>(null);
+  const [casActionsData, setCasActionsData] = useState<MyCasActionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [operationLoading, setOperationLoading] = useState(false);
@@ -196,75 +201,70 @@ const StatsPage: React.FC = () => {
           controller.abort();
         }, 15000); // 15 seconds timeout
 
-        // Fetch brandmaster data with new JSON structure
-        const brandmasterRes = await apiFetch<BrandmasterStatsResponse>('/api/bm/myTarget', {
+        // Fetch all three data sources in parallel
+        const [brandmasterRes, casActionsRes, sampleStatsRes] = await Promise.all([
+          // Fetch brandmaster data
+          apiFetch<BrandmasterStatsResponse>('/api/bm/myTarget', {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+          }),
+          // Fetch CAS actions data
+          apiFetch<MyCasActionsResponse>('/api/bm/getMyCasActions', {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
-        });
-
-        if (timeoutId) clearTimeout(timeoutId);
-
-        // Validate response
-        if (!brandmasterRes || typeof brandmasterRes !== 'object') {
-          throw new Error('Invalid brandmaster data received');
-        }
-
-        if (mountedRef.current && !controller.signal.aborted) {
-          setBrandmasterData(brandmasterRes);
-          
-          // Set target values from new structure
-          setTargetHilo(brandmasterRes.target.gloHilo);
-          setTargetVelo(brandmasterRes.target.velo);
-          setTargetHiloPlus(brandmasterRes.target.gloHiloPlus);
-
-          // Set BCP values
-          setIloscHilo(brandmasterRes.hiloBCP);
-          setIloscHiloPlus(brandmasterRes.hiloPlusBCP);
-          setIloscVelo(brandmasterRes.veloBCP);
-
-          setError(null);
-        }
-
-        // Fetch sample stats from external API
-        if (mountedRef.current && !controller.signal.aborted) {
-          const tpResRaw = await fetch(`https://api.webform.tdy-apps.com/sample/stats`, {
+          }),
+          // Fetch sample stats from external API
+          fetch(`https://api.webform.tdy-apps.com/sample/stats`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               sample: {
-                hostessCode: brandmasterRes.accountLogin,
+                hostessCode: "PLH7502", // This will be updated with actual data
                 currentAction: null
               }
             }),
             signal: controller.signal,
-          });
-          
-          if (!tpResRaw.ok) {
-            throw new Error(`External API failed: ${tpResRaw.status}`);
-          }
+          }).then(res => {
+            if (!res.ok) throw new Error(`External API failed: ${res.status}`);
+            return res.json() as Promise<tpSampleStats>;
+          })
+        ]);
 
-          const tpRes = await tpResRaw.json() as tpSampleStats;
-          
-          if (mountedRef.current && !controller.signal.aborted) {
-            setSampleStats(tpRes);
+        if (timeoutId) clearTimeout(timeoutId);
 
-            // Calculate additional stats from external API
-            const currentMonth = tpRes.data.sample.currentMonth;
+        if (mountedRef.current && !controller.signal.aborted) {
+          // Set brandmaster data
+          setBrandmasterData(brandmasterRes);
+          setTargetHilo(brandmasterRes.target.gloHilo);
+          setTargetVelo(brandmasterRes.target.velo);
+          setTargetHiloPlus(brandmasterRes.target.gloHiloPlus);
+          setIloscHilo(brandmasterRes.hiloBCP);
+          setIloscHiloPlus(brandmasterRes.hiloPlusBCP);
+          setIloscVelo(brandmasterRes.veloBCP);
+
+          // Set CAS actions data
+          setCasActionsData(casActionsRes);
+
+          // Set sample stats and calculate additional counts
+          setSampleStats(sampleStatsRes);
+          const currentMonth = sampleStatsRes.data.sample.currentMonth;
             const hilo = currentMonth.find(item => item.model.toLowerCase() === "hilo") || { count: 0 };
             const hiloPlus = currentMonth.find(item => item.model.toLowerCase() === "hilo+") || { count: 0 };
             const veloItems = currentMonth.filter(item => item.brand.toLowerCase() === "velo");
 
             // Update counts with external data
-            setIloscHilo(prev => prev + hilo.count);
-            setIloscHiloPlus(prev => prev + hiloPlus.count);
+            setIloscHilo( hilo.count);
+            setIloscHiloPlus(hiloPlus.count);
 
             if (veloItems.length > 0) {
               const totalVelo = veloItems.reduce((sum, v) => sum + (v.count ?? 0), 0);
               const totalVeloAdjusted = totalVelo - hilo.count - hiloPlus.count;
-              setIloscVelo(prev => prev + totalVeloAdjusted);
+              setIloscVelo(totalVeloAdjusted);
             }
-          }
+
+          setError(null);
         }
 
       } catch (err: unknown) {
@@ -300,6 +300,20 @@ const StatsPage: React.FC = () => {
     };
   }, []);
 
+  // Computed values
+  const totalHours = useMemo(() => {
+    if (!casActionsData) return 0;
+    return casActionsData.actions.reduce((total, action) => {
+      const actionMinutes = parseTimeToMinutes(action.totalTime);
+      // Cap each action at 4 hours (240 minutes)
+      return total + Math.min(actionMinutes, 240);
+    }, 0);
+  }, [casActionsData]);
+
+  const formattedTotalHours = useMemo(() => {
+    return formatMinutesToTime(totalHours);
+  }, [totalHours]);
+
   const editableFields: (keyof LegacyTargetType)[] = [
     "bmHiloBPC",
     "bmHiloPluBPC", 
@@ -330,13 +344,13 @@ const StatsPage: React.FC = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const res = await apiFetch<messageRes>("/api/general/editBCP", {
+      const res = await apiFetch<messageRes>("/api/bm/setBCP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          veloBcp: editingKey === 'bmVeloBPC' ? inputValue : brandmasterData.veloBCP,
-          hiloBcp: editingKey === 'bmHiloBPC' ? inputValue : brandmasterData.hiloBCP,
-          hiloPlusBcp: editingKey === 'bmHiloPluBPC' ? inputValue : brandmasterData.hiloPlusBCP,
+          veloBCP: editingKey === 'bmVeloBPC' ? inputValue : brandmasterData.veloBCP,
+          hiloBCP: editingKey === 'bmHiloBPC' ? inputValue : brandmasterData.hiloBCP,
+          hiloPlusBCP: editingKey === 'bmHiloPluBPC' ? inputValue : brandmasterData.hiloPlusBCP,
         }),
         signal: controller.signal,
       });
@@ -424,84 +438,112 @@ const StatsPage: React.FC = () => {
       </div>
 
       <div className="p-6 space-y-8 bg-gradient-to-b from-zinc-950 via-zinc-950 to-black text-gray-100 min-h-screen">
-        {/* Header */}
+
+        {/* Main Stats Table */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center space-y-2"
+          transition={{ delay: 0.1, duration: 0.5 }}
         >
-          <h1 className="text-3xl font-bold text-white">Statystyki</h1>
-          {brandmasterData && (
-            <p className="text-zinc-400">
-              {brandmasterData.imie} {brandmasterData.nazwisko} • {brandmasterData.accountLogin}
-            </p>
-          )}
+          <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-800/60 backdrop-blur-xl border border-zinc-700/50 hover:border-zinc-600/50 transition-all duration-300 rounded-2xl shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold text-white">
+                <Package className="w-6 h-6" />
+                Podsumowanie Statystyk
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-zinc-700/50">
+                      <TableHead className="text-zinc-300 font-semibold">Imię</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Nazwisko</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Godziny</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Hilo</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Hilo BCP</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Hilo Target</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">HiloPlus</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">HiloPlus BCP</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">HiloPlus Target</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Velo</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Velo BCP</TableHead>
+                      <TableHead className="text-zinc-300 font-semibold">Velo Target</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow className="border-zinc-700/30 hover:bg-zinc-800/30">
+                      <TableCell className="text-white font-medium">
+                        {casActionsData?.imie || '-'}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {casActionsData?.nazwisko || '-'}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {formattedTotalHours}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {iloscHilo.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {brandmasterData?.hiloBCP.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {targetHilo.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {iloscHiloPlus.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {brandmasterData?.hiloPlusBCP.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {targetHiloPlus.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {iloscVelo.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {brandmasterData?.veloBCP.toLocaleString() || 0}
+                      </TableCell>
+                      <TableCell className="text-white font-medium">
+                        {targetVelo.toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Progress Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard 
             title="Hilo" 
-            actual={iloscHilo} 
+            actual={iloscHilo + (brandmasterData?.hiloBCP || 0)} 
             target={targetHilo} 
             icon={<Package className="w-4 h-4" />}
             loading={operationLoading}
           />
           <StatCard 
             title="Hilo+" 
-            actual={iloscHiloPlus} 
+            actual={iloscHiloPlus + (brandmasterData?.hiloPlusBCP || 0)} 
             target={targetHiloPlus} 
             icon={<Package className="w-4 h-4" />}
             loading={operationLoading}
           />
           <StatCard 
             title="Velo" 
-            actual={iloscVelo} 
+            actual={iloscVelo + (brandmasterData?.veloBCP || 0)} 
             target={targetVelo} 
             icon={<Package className="w-4 h-4" />}
             loading={operationLoading}
           />
         </div>
 
-        {/* Additional Info Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Team Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-800/60 backdrop-blur-xl border border-zinc-700/50 hover:border-zinc-600/50 transition-all duration-300 rounded-2xl shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg font-semibold text-white">
-                  <Layers2 className="w-5 h-5" />
-                  Informacje o zespole
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {brandmasterData && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">Zespół:</span>
-                      <span className="text-white font-medium">{brandmasterData.team.territory.territoryIdent}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">ID Tourplanner:</span>
-                      <span className="text-white font-mono text-sm">{brandmasterData.idTourplanner}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">ID Brandmaster:</span>
-                      <span className="text-white font-medium">{brandmasterData.idBrandmaster}</span>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Emergency Data Editor */}
-          <motion.div
+                  {/* Emergency Data Editor */}
+                  <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
@@ -561,7 +603,89 @@ const StatsPage: React.FC = () => {
               </CardContent>
             </Card>
           </motion.div>
-        </div>
+
+        {/* Actions List */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <Card className="bg-gradient-to-br from-zinc-900/80 to-zinc-800/60 backdrop-blur-xl border border-zinc-700/50 hover:border-zinc-600/50 transition-all duration-300 rounded-2xl shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-semibold text-white">
+                <Clock className="w-6 h-6" />
+                Lista Akcji
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="space-y-2">
+                {casActionsData?.actions.map((action, index) => (
+                  <AccordionItem 
+                    key={action.ident} 
+                    value={`item-${index}`}
+                    className="border border-zinc-700/30 rounded-lg bg-zinc-800/20 hover:bg-zinc-800/40 transition-colors"
+                  >
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center justify-between w-full pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-white font-medium">{action.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-zinc-400">
+                          <Clock className="w-4 h-4" />
+                          <span className="font-mono">{action.totalTime}</span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-zinc-400" />
+                            <div>
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Od</p>
+                              <p className="text-white font-medium">{new Date(action.since).toLocaleString('pl-PL')}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-zinc-400" />
+                            <div>
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Do</p>
+                              <p className="text-white font-medium">{new Date(action.until).toLocaleString('pl-PL')}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-zinc-400" />
+                            <div>
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Adres</p>
+                              <p className="text-white font-medium">{action.shopDetails.streetAddress}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-zinc-400" />
+                            <div>
+                              <p className="text-xs text-zinc-500 uppercase tracking-wide">Sklep</p>
+                              <p className="text-white font-medium">{action.shopDetails.ShopName}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-zinc-700/30">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-zinc-500 uppercase tracking-wide">ID Akcji</span>
+                          <span className="text-white font-mono text-sm">{action.ident}</span>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+        </motion.div>
+
       </div>
     </ErrorBoundary>
   );

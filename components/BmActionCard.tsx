@@ -9,6 +9,7 @@ import { Pencil, User, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "@/utils/apiFetch";
 import { cn } from "@/lib/utils";
+import { CasActionDialog } from "./CasActionDialog";
 
 export interface UIAction {
   idAction: number;
@@ -27,6 +28,7 @@ export interface UIAction {
 
 interface Props {
   action: UIAction;
+  onClick?: (action: UIAction) => void;
 }
 
 function formatDateTime(someDate?: Date | null) {
@@ -63,8 +65,9 @@ function formatTime(someDate?: Date | null) {
   }
 }
 
-const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
+const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
   const [submitting, setSubmitting] = useState(false);
+  const [casDialogOpen, setCasDialogOpen] = useState(false);
 
   const submitUpdateStatus = useCallback(
     async (actionIdFromCard: number, status: string) => {
@@ -93,6 +96,8 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
         });
 
         toast.success(res?.message ?? `Status zmieniony na ${status}`);
+        // Reload page to reflect changes
+        window.location.reload();
       } catch (error) {
         console.error("submitUpdateStatus error:", error);
         const errorMessage = error instanceof Error ? error.message : "Nie udało się zmienić statusu.";
@@ -103,6 +108,16 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
     },
     [submitting]
   );
+
+  const handleAcceptClick = useCallback(() => {
+    // For VELO or PKP events, change status directly without CAS dialog
+    if (action.eventName === "Velo-Unconventional" || action.eventName === "PKP") {
+      submitUpdateStatus(action.idAction, "ACCEPTED");
+      return;
+    }
+    // For other events, open CAS dialog
+    setCasDialogOpen(true);
+  }, [action.eventName, action.idAction, submitUpdateStatus]);
 
   const statusPillClass =
     action.actionStatus === "ACCEPTED"
@@ -117,11 +132,18 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
         "group relative rounded-xl border border-zinc-800/60 bg-gradient-to-br",
         "from-neutral-900/70 to-neutral-800/50 backdrop-blur-md shadow-sm",
         "hover:shadow-lg hover:scale-[1.01] transition-all duration-200",
+        onClick ? "cursor-pointer" : "",
         gradientForShop(action.eventName) || ""
       )}
       aria-labelledby={`action-${action.idAction}-title`}
       role="article"
       aria-describedby={`action-${action.idAction}-description`}
+      onClick={(e) => {
+        // Only trigger if not clicking on a button
+        const target = e.target as HTMLElement;
+        if (target.closest('button')) return;
+        onClick?.(action);
+      }}
     >
       <CardContent className="px-3.5 py-1 flex flex-col gap-3">
         {/* Header */}
@@ -186,15 +208,17 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
           </Button>
 
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Akcje dla akcji">
-            <Button
-              onClick={() => submitUpdateStatus(action.idAction, "ACCEPTED")}
+            {action.actionStatus !== "ACCEPTED" && (             
+              <Button
+              onClick={handleAcceptClick}
               size="sm"
               disabled={submitting}
               className="h-7 px-2.5 text-[12px] bg-zinc-900 hover:bg-green-600/80 text-green-50 border border-green-800"
               aria-label={`Akceptuj akcję dla sklepu ${action.shopName}`}
             >
               <Check className="h-3.5 w-3.5 mr-1" aria-hidden="true" /> Akceptuj
-            </Button>
+            </Button> )}
+
             <Button
               onClick={() => submitUpdateStatus(action.idAction, "EDITABLE")}
               size="sm"
@@ -216,6 +240,18 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action }) => {
           </div>
         </div>
       </CardContent>
+      {
+      action.actionStatus !== "ACCEPTED" && (
+      <CasActionDialog
+        open={casDialogOpen}
+        onOpenChange={setCasDialogOpen}
+        action={action}
+        onSuccess={() => {
+          // Optionally refresh or update the action list
+          toast.success("Akcje CAS zostały utworzone");
+        }}
+      />
+      )}
     </Card>
   );
 };

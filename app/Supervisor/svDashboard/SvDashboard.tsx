@@ -14,7 +14,9 @@ import DarkLoadingPage from "@/components/LoadingScreen";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { toast } from "sonner";
 import { MyBmsActionsResponse } from "@/types/apiStuff/responses/MyBmsActionsResponse";
+import { AllShopsResponse } from "@/types/apiStuff/responses/AllShopsResponse";
 import { apiFetch } from "@/utils/apiFetch";
+import EditActionDialog from "@/components/EditActionDialog";
 
 // --- Local UI type (self-contained) ---
 export interface UIAction {
@@ -104,11 +106,18 @@ function dayLabel(date?: Date) {
 export default function SvDashboard() {
   const [uiActions, setUiActions] = useState<UIAction[]>([]);
   const [filterBrandmaster, setFilterBrandmaster] = useState<string>("All");
-  const [filterDay, setFilterDay] = useState<string>("All");
+  const [filterDay, setFilterDay] = useState<string>(() => {
+    // Default to today's date in YYYY-MM-DD format
+    const today = new Date();
+    return dayKey(today);
+  });
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterEvent, setFilterEvent] = useState<string>("All");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [shopsData, setShopsData] = useState<AllShopsResponse[]>([]);
+  const [selectedAction, setSelectedAction] = useState<UIAction | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,6 +142,38 @@ export default function SvDashboard() {
     return () => {
       document.removeEventListener("click", onDocClick);
       document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
+  // Fetch shops data
+  useEffect(() => {
+    const ac = new AbortController();
+    let mounted = true;
+
+    const fetchShops = async () => {
+      try {
+        const res = await apiFetch<AllShopsResponse[]>("/api/general/allShops", {
+          signal: ac.signal,
+        });
+        if (mounted && !ac.signal.aborted) {
+          setShopsData(res);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return;
+        }
+        console.error("Failed to load shops", err);
+        if (mounted && !ac.signal.aborted) {
+          toast.error("Nie udało się pobrać listy sklepów");
+        }
+      }
+    };
+
+    fetchShops();
+
+    return () => {
+      mounted = false;
+      ac.abort();
     };
   }, []);
 
@@ -256,7 +297,17 @@ export default function SvDashboard() {
   const filtered = useMemo(() => {
     return uiActions.filter((a) => {
       const bmMatch = filterBrandmaster === "All" || a.brandmasterLogin === filterBrandmaster;
-      const dayMatch = filterDay === "All" || dayKey(a.actionSince) === filterDay;
+      
+      // Changed: show actions SINCE the selected day (on or after), not just matching that day
+      let dayMatch = true;
+      if (filterDay !== "All") {
+        const filterDate = new Date(filterDay);
+        // Compare dates: only compare date parts (ignore time)
+        const actionDate = new Date(a.actionSince.getFullYear(), a.actionSince.getMonth(), a.actionSince.getDate());
+        const compareDate = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+        dayMatch = actionDate >= compareDate;
+      }
+      
       const statusMatch = filterStatus === "All" || a.actionStatus === filterStatus;
       const eventMatch = filterEvent === "All" || a.eventName === filterEvent;
       return bmMatch && dayMatch && statusMatch && eventMatch;
@@ -275,6 +326,20 @@ export default function SvDashboard() {
       .filter(([k]) => k !== "invalid")
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime());
   }, [filtered]);
+
+  const handleCardClick = useCallback((action: UIAction) => {
+    if (action.actionStatus === "ACCEPTED") {
+      toast.info("Nie można edytować zaakceptowanych akcji");
+      return;
+    }
+    setSelectedAction(action);
+    setDialogOpen(true);
+  }, []);
+
+  const handleDialogSuccess = useCallback(() => {
+    // Refetch actions after successful edit
+    window.location.reload();
+  }, []);
 
   if (loading) return <DarkLoadingPage />;
 
@@ -413,7 +478,7 @@ export default function SvDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {actions.map((a) => (
                       <ErrorBoundary key={`${a.idAction}-${a.brandmasterLogin ?? "bm"}`}>
-                        <BrandmasterActionCard action={a} />
+                        <BrandmasterActionCard action={a} onClick={handleCardClick} />
                       </ErrorBoundary>
                     ))}
                   </div>
@@ -422,6 +487,15 @@ export default function SvDashboard() {
             )}
           </div>
         </div>
+
+        {/* Edit Action Dialog */}
+        <EditActionDialog
+          action={selectedAction}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          shopsData={shopsData}
+          onSuccess={handleDialogSuccess}
+        />
       </div>
     </ErrorBoundary>
   );
