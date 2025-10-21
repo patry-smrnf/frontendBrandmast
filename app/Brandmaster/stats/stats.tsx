@@ -431,7 +431,7 @@ const StatsPage: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center space-y-2"
         >
-          <h1 className="text-3xl font-bold text-white">Statystyki Brandmastera</h1>
+          <h1 className="text-3xl font-bold text-white">Statystyki</h1>
           {brandmasterData && (
             <p className="text-zinc-400">
               {brandmasterData.imie} {brandmasterData.nazwisko} • {brandmasterData.accountLogin}
