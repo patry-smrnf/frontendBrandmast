@@ -107,6 +107,26 @@ export default function BmDashboard() {
     });
   }, [actions, filterShop, filterMonth, filterStatus]);
 
+  /* -------------------- Calculate total time -------------------- */
+  const totalTime = useMemo(() => {
+    let totalMinutes = 0;
+    
+    for (const a of filtered) {
+      if (a.since && a.until) {
+        const since = new Date(a.since);
+        const until = new Date(a.until);
+        const durationMs = until.getTime() - since.getTime();
+        const durationMinutes = Math.max(0, Math.floor(durationMs / (1000 * 60)));
+        totalMinutes += durationMinutes;
+      }
+    }
+    
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return { hours, minutes, totalMinutes };
+  }, [filtered]);
+
   /* -------------------- Group by date -------------------- */
   const groupedByDate = useMemo(() => {
     const groups = new Map<string, MyAction[]>();
@@ -154,14 +174,76 @@ export default function BmDashboard() {
       {/* Main Content */}
       <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-zinc-950 text-gray-100 px-6 py-10 flex flex-col items-center">
         <div className="w-full max-w-5xl space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-semibold tracking-tight mb-2 text-white">
-              Twoje Akcje
-            </h1>
-            <p className="text-gray-400 text-sm">
-              Zgrupowane według dat — łatwo zobacz, co masz zaplanowane.
-            </p>
+          {/* Header - Compact Stats Box */}
+          <div className="flex justify-center">
+            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-xl sm:rounded-2xl px-4 py-3 sm:px-8 sm:py-5 shadow-2xl backdrop-blur-sm w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-6">
+                {/* Actions Count */}
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium mb-0.5 sm:mb-1">
+                    Zaplanowane akcje
+                  </span>
+                  <div className="flex items-baseline gap-1.5 sm:gap-2">
+                    <span className="text-2xl sm:text-4xl font-bold text-white tabular-nums">
+                      {filtered.length}
+                    </span>
+                    <span className="text-xs sm:text-sm text-gray-500">
+                      / {actions.length} total
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="hidden sm:block h-12 w-px bg-zinc-800" />
+                <div className="block sm:hidden w-full h-px bg-zinc-800" />
+                
+                {/* Total Time */}
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wider font-medium mb-0.5 sm:mb-1">
+                    Całkowity czas
+                  </span>
+                  <div className="flex items-baseline gap-0.5 sm:gap-1">
+                    <span className="text-xl sm:text-3xl font-bold text-white tabular-nums">
+                      {totalTime.hours}
+                    </span>
+                    <span className="text-[10px] sm:text-sm text-gray-400">h</span>
+                    <span className="text-lg sm:text-2xl font-bold text-white tabular-nums ml-0.5 sm:ml-1">
+                      {totalTime.minutes}
+                    </span>
+                    <span className="text-[10px] sm:text-sm text-gray-400">min</span>
+                  </div>
+                </div>
+                
+                {/* Divider */}
+                <div className="hidden sm:block h-12 w-px bg-zinc-800" />
+                <div className="block sm:hidden w-full h-px bg-zinc-800" />
+                
+                {/* Status Breakdown */}
+                <div className="flex flex-row sm:flex-col gap-3 sm:gap-1 text-[10px] sm:text-xs justify-around sm:justify-start">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500" />
+                    <span className="hidden sm:inline text-gray-400">Do edycji: </span>
+                    <span className="text-white font-medium">
+                      {filtered.filter(a => a.status === "EDITABLE").length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500" />
+                    <span className="hidden sm:inline text-gray-400">Zatwierdzone: </span>
+                    <span className="text-white font-medium">
+                      {filtered.filter(a => a.status === "ACCEPTED").length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500" />
+                    <span className="hidden sm:inline text-gray-400">Odrzucone: </span>
+                    <span className="text-white font-medium">
+                      {filtered.filter(a => a.status === "DECLINED").length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Filters */}
