@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { apiFetch } from "@/utils/apiFetch";
+import type { AuthResponse } from "@/types/apiStuff/responses/AuthResponse";
 
 import { toast } from "sonner";
 

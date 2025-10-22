@@ -203,7 +203,7 @@ export default function MyTeamPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-      const res = await apiFetch<{ message: string }>("/api/sv/addBm", {
+      const res = await apiFetch<{ message: string }>("/api/sv/createBm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newBrandmaster),

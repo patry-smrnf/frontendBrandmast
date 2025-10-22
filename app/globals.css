@@ -120,3 +120,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fallback for browsers that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(10px)) {
+  .backdrop-blur-sm,
+  .backdrop-blur,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl {
+    background-color: rgba(0, 0, 0, 0.85) !important;
+  }
+  
+  .backdrop-blur-none {
+    background-color: transparent !important;
+  }
+}

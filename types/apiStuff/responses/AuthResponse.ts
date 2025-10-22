@@ -1,4 +1,4 @@
-interface AuthResponse {
+export interface AuthResponse {
     login?: string,
     message: string,
     role?: string,

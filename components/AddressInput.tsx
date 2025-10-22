@@ -39,8 +39,6 @@ export default function AddressInput({ value, onChange, shopsResponse = [], onCh
       .slice(0, 8);
   }, [shopsResponse, value, normalizeString]);
 
-  useEffect(() => console.log(shopsResponse))
-
   return (
     <div className="relative w-full">
       <div className="mb-6">

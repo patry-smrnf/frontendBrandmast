@@ -336,10 +336,25 @@ export default function SvDashboard() {
     setDialogOpen(true);
   }, []);
 
-  const handleDialogSuccess = useCallback(() => {
-    // Refetch actions after successful edit
-    window.location.reload();
-  }, []);
+  const handleDialogSuccess = useCallback((updatedAction?: Partial<UIAction>) => {
+    if (!selectedAction || !updatedAction) return;
+    
+    // Update the action in the local state instead of reloading
+    setUiActions((prevActions) =>
+      prevActions.map((action) =>
+        action.idAction === selectedAction.idAction
+          ? { ...action, ...updatedAction }
+          : action
+      )
+    );
+    
+    // Close the dialog
+    setDialogOpen(false);
+    setSelectedAction(null);
+    
+    // Show success message
+    toast.success("Akcja zaktualizowana pomyślnie");
+  }, [selectedAction]);
 
   if (loading) return <DarkLoadingPage />;
 

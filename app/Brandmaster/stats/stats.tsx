@@ -344,7 +344,7 @@ const StatsPage: React.FC = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-      const res = await apiFetch<messageRes>("/api/bm/setBCP", {
+      const res = await apiFetch<messageRes>("/api/bm/editBCP", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

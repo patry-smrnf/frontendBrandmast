@@ -5,8 +5,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
 
 import { MyAction } from "@/types/apiStuff/responses/MyAction.types";
 import { AllShopsResponse } from "@/types/apiStuff/responses/AllShopsResponse";
@@ -120,6 +129,11 @@ export default function ActionDetails() {
   const [actionDate, setActionDate] = useState<Date>(new Date());
   const [systemStart, setSystemStart] = useState("");
   const [systemEnd, setSystemEnd] = useState("");
+
+  // Create copies dialog
+  const [copiesDialogOpen, setCopiesDialogOpen] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [creatingCopies, setCreatingCopies] = useState(false);
 
   useEffect(() => {
     let aborted = false;
@@ -292,6 +306,102 @@ export default function ActionDetails() {
     [shopID, actionDate, systemStart, systemEnd, shopAddress, shopsData, typeOfLoad, actionDetails, saving]
   );
 
+  const handleCreateCopies = useCallback(async () => {
+    if (selectedDates.length === 0) {
+      toast.error("Please select at least one date");
+      return;
+    }
+
+    if (creatingCopies) return;
+    setCreatingCopies(true);
+
+    try {
+      let resolvedShopId = shopID;
+
+      if (resolvedShopId === 0) {
+        const normalizedAddress = shopAddress.trim().toLowerCase();
+        const found = shopsData?.find((s) => s.address.trim().toLowerCase() === normalizedAddress);
+        if (found) resolvedShopId = found.id;
+        else {
+          toast.error("[Frontend]: Nie istnieje sklep z takim adresem");
+          return;
+        }
+      }
+
+      if (!systemStart || !systemEnd || !shopAddress) {
+        toast.error("[Frontend]: Missing data");
+        return;
+      }
+
+      // Validate times: normalize and ensure start <= end
+      let normalizedStart: string;
+      let normalizedEnd: string;
+      try {
+        normalizedStart = normalizeTime(systemStart);
+        normalizedEnd = normalizeTime(systemEnd);
+      } catch (err) {
+        toast.error(String(err));
+        return;
+      }
+
+      let successCount = 0;
+      let failCount = 0;
+
+      // Create action for each selected date
+      for (const date of selectedDates) {
+        try {
+          const dateStr = formatDate(date);
+          const startISO = combineDateTime(dateStr, normalizedStart);
+          const endISO = combineDateTime(dateStr, normalizedEnd);
+
+          if (!startISO || !endISO) {
+            toast.error(`[Frontend]: Could not combine date and time for ${dateStr}`);
+            failCount++;
+            continue;
+          }
+
+          if (DateTime.fromISO(endISO) < DateTime.fromISO(startISO)) {
+            toast.error(`[Frontend]: Invalid time range for ${dateStr}`);
+            failCount++;
+            continue;
+          }
+
+          const payload: newActionPayload = {
+            idShop: resolvedShopId,
+            sinceSystem: startISO,
+            untilSystem: endISO,
+          };
+
+          await apiFetch<messageRes>("/api/bm/addAction", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to create action for ${formatDate(date)}:`, err);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully created ${successCount} action${successCount > 1 ? "s" : ""}`);
+      }
+      if (failCount > 0) {
+        toast.error(`Failed to create ${failCount} action${failCount > 1 ? "s" : ""}`);
+      }
+
+      // Reset and close dialog
+      setSelectedDates([]);
+      setCopiesDialogOpen(false);
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setCreatingCopies(false);
+    }
+  }, [selectedDates, shopID, shopAddress, shopsData, systemStart, systemEnd, creatingCopies]);
+
   return (
     <>
       <div ref={menuRef} className="fixed top-4 right-4 z-50" onClick={(e) => e.stopPropagation()}>
@@ -357,9 +467,91 @@ export default function ActionDetails() {
             >
               {saving ? "Saving..." : "Save Changes"}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full text-base flex items-center gap-2"
+              onClick={() => setCopiesDialogOpen(true)}
+              disabled={saving}
+            >
+              <Copy className="w-4 h-4" />
+              Create Copies for Multiple Dates
+            </Button>
           </form>
         </div>
       </div>
+
+      {/* Create Copies Dialog */}
+      <Dialog open={copiesDialogOpen} onOpenChange={setCopiesDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md bg-zinc-900/95 border-zinc-800 text-gray-100 backdrop-blur-xl p-4 sm:p-6">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+              Create Copies
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+              Select dates to duplicate this action. Time stays the same.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center gap-3 py-2">
+            <div className="w-full flex justify-center">
+              <Calendar
+                mode="multiple"
+                selected={selectedDates}
+                onSelect={(dates) => setSelectedDates(dates || [])}
+                className="rounded-lg border border-zinc-800 bg-zinc-950/50 text-gray-100 p-2 [--cell-size:theme(spacing.9)] sm:[--cell-size:theme(spacing.10)]"
+                classNames={{
+                  day_button: "hover:bg-zinc-800 text-gray-300",
+                  selected: "bg-green-900 hover:bg-green-800 text-white",
+                  today: "bg-zinc-800 text-gray-100",
+                  outside: "text-gray-600",
+                  disabled: "text-gray-700 opacity-50",
+                }}
+              />
+            </div>
+
+            {selectedDates.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-green-900/20 border border-green-900/30 rounded-lg backdrop-blur-sm">
+                <Copy className="w-4 h-4 text-green-400" />
+                <span className="text-sm font-medium text-green-300">
+                  {selectedDates.length} date{selectedDates.length > 1 ? "s" : ""} selected
+                </span>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCopiesDialogOpen(false);
+                setSelectedDates([]);
+              }}
+              disabled={creatingCopies}
+              className="w-full sm:w-auto border-zinc-700 bg-zinc-800/50 hover:bg-zinc-800 text-gray-300 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateCopies}
+              disabled={creatingCopies || selectedDates.length === 0}
+              className="w-full sm:w-auto bg-gradient-to-r from-green-900 to-emerald-900 hover:from-green-800 hover:to-emerald-800 text-white font-semibold shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {creatingCopies ? (
+                <>
+                  <span className="animate-pulse">Creating...</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Create {selectedDates.length > 0 ? selectedDates.length : ""} {selectedDates.length !== 1 ? "Actions" : "Action"}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

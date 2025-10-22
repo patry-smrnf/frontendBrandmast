@@ -16,7 +16,7 @@ interface EditActionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   shopsData: AllShopsResponse[];
-  onSuccess?: () => void;
+  onSuccess?: (updatedAction?: Partial<UIAction>) => void;
 }
 
 function formatDate(date: Date): string {
@@ -141,9 +141,20 @@ export default function EditActionDialog({
         body: JSON.stringify(payload),
       });
 
-      toast.success(res?.message ?? "Akcja zaktualizowana pomyślnie");
+      // Find the shop details for the updated action
+      const updatedShop = shopsData.find(s => s.id === resolvedShopId);
+
+      // Prepare updated action data to pass back
+      const updatedActionData: Partial<UIAction> = {
+        shopID: resolvedShopId,
+        shopAddress: updatedShop?.address || shopAddress,
+        shopName: updatedShop?.name || action.shopName,
+        actionSince: sinceDate,
+        actionUntil: untilDate,
+      };
+
       onOpenChange(false);
-      onSuccess?.();
+      onSuccess?.(updatedActionData);
     } catch (error) {
       console.error("Error saving action:", error);
       const errorMessage = error instanceof Error ? error.message : "Nie udało się zapisać zmian";
