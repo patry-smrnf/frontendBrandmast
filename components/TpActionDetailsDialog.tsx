@@ -60,7 +60,7 @@ export default function TpActionDetailsDialog({
     const fetchActionStats = async () => {
       setIsLoadingStats(true);
       try {
-        const response = await fetch("https://someapi.com/test", {
+        const response = await fetch("https://api.webform.tdy-apps.com/sample/stats", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -147,7 +147,7 @@ export default function TpActionDetailsDialog({
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-purple-500/10 border border-purple-500/30 rounded-md p-2">
                     <p className="text-xs text-purple-400 font-medium">Velo</p>
-                    <p className="text-2xl font-bold text-white">{actionStats.velo}</p>
+                    <p className="text-2xl font-bold text-white">{actionStats.velo - actionStats.glo}</p>
                   </div>
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-2">
                     <p className="text-xs text-blue-400 font-medium">Glo</p>
