@@ -16,6 +16,7 @@ const statusGradients = {
   finished: "from-orange-950/80 via-zinc-900 to-black",
   started: "from-green-950/80 via-zinc-900 to-black",
   editable: "from-zinc-800/80 via-zinc-900 to-black",
+  cancelled: "from-red-950/80 via-zinc-900 to-black",
 };
 
 const statusColors = {
@@ -23,6 +24,7 @@ const statusColors = {
   finished: "bg-orange-500/20 text-orange-300 border-orange-500/40",
   started: "bg-green-500/20 text-green-300 border-green-500/40",
   editable: "bg-zinc-500/20 text-zinc-300 border-zinc-500/40",
+  cancelled: "bg-red-500/20 text-red-300 border-red-500/40",
 };
 
 const statusIcons = {
@@ -30,6 +32,7 @@ const statusIcons = {
   finished: "Zakończona",
   started: "Rozpoczęta",
   editable: "Do edycji",
+  cancelled: "Anulowana",
 };
 
 export default function TpActionCard({ action, onClick, onStatusChange }: TpActionCardProps) {

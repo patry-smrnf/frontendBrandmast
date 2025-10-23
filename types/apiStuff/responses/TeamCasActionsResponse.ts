@@ -9,7 +9,7 @@ export interface TeamCasAction {
     ident: string;
     name: string;
   };
-  status: "accepted" | "finished" | "started" | "editable";
+  status: "accepted" | "finished" | "started" | "editable" | "cancelled";
   users: {
     uuid: string;
     ident: string;

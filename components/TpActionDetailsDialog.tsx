@@ -34,6 +34,7 @@ const statusLabels = {
   finished: "Zakończona",
   started: "Rozpoczęta",
   editable: "Do edycji",
+  cancelled: "Anulowana",
 };
 
 const statusColors = {
@@ -41,6 +42,7 @@ const statusColors = {
   finished: "bg-orange-500/20 text-orange-400 border border-orange-500/30",
   started: "bg-green-500/20 text-green-400 border border-green-500/30",
   editable: "bg-zinc-500/20 text-zinc-400 border border-zinc-500/30",
+  cancelled: "bg-red-500/20 text-red-400 border border-red-500/30",
 };
 
 export default function TpActionDetailsDialog({
