@@ -111,7 +111,7 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
 
   const handleAcceptClick = useCallback(() => {
     // For VELO or PKP events, change status directly without CAS dialog
-    if (action.eventName === "Velo-Unconventional" || action.eventName === "PKP") {
+    if (action.eventName === "niewiem") {
       submitUpdateStatus(action.idAction, "ACCEPTED");
       return;
     }
@@ -208,7 +208,7 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
           </Button>
 
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Akcje dla akcji">
-            {action.actionStatus !== "ACCEPTED" && (             
+            {action.actionStatus !== "ACCEPTED" && action.eventName !== "niewiem" && (             
               <Button
               onClick={handleAcceptClick}
               size="sm"
