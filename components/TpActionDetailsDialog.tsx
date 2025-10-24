@@ -54,7 +54,7 @@ export default function TpActionDetailsDialog({
   const [isLoadingStats, setIsLoadingStats] = useState(false);
 
   useEffect(() => {
-    if (!action || !open || action.status !== "started") {
+    if (!action || !open || (action.status !== "started" && action.status !== "finished")) {
       setActionStats(null);
       return;
     }
@@ -135,8 +135,8 @@ export default function TpActionDetailsDialog({
         </DialogHeader>
 
         <div className="space-y-3 mt-2">
-          {/* Action Stats - Only for started actions */}
-          {action.status === "started" && (
+          {/* Action Stats - For started and finished actions */}
+          {(action.status === "started" || action.status === "finished") && (
             <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800">
               <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">
                 Statystyki akcji

@@ -201,19 +201,20 @@ const StatsPage: React.FC = () => {
           controller.abort();
         }, 15000); // 15 seconds timeout
 
-        // Fetch all three data sources in parallel
-        const [brandmasterRes, casActionsRes, sampleStatsRes] = await Promise.all([
-          // Fetch brandmaster data
-          apiFetch<BrandmasterStatsResponse>('/api/bm/myTarget', {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
-          }),
-          // Fetch CAS actions data
-          apiFetch<MyCasActionsResponse>('/api/bm/getMyCasActions', {
+        // Fetch brandmaster data first to get accountLogin
+        const brandmasterRes = await apiFetch<BrandmasterStatsResponse>('/api/bm/myTarget', {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: controller.signal,
+        });
+
+        // Fetch remaining data sources in parallel
+        const [casActionsRes, sampleStatsRes] = await Promise.all([
+          // Fetch CAS actions data
+          apiFetch<MyCasActionsResponse>('/api/bm/getMyCasActions', {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
           }),
           // Fetch sample stats from external API
           fetch(`https://api.webform.tdy-apps.com/sample/stats`, {
@@ -221,7 +222,7 @@ const StatsPage: React.FC = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               sample: {
-                hostessCode: "PLH7502", // This will be updated with actual data
+                hostessCode: brandmasterRes.accountLogin,
                 currentAction: null
               }
             }),
@@ -542,8 +543,8 @@ const StatsPage: React.FC = () => {
           />
         </div>
 
-                  {/* Emergency Data Editor */}
-                  <motion.div
+          {/* Emergency Data Editor */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
