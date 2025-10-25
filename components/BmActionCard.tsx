@@ -109,7 +109,8 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
     [submitting]
   );
 
-  const handleAcceptClick = useCallback(() => {
+  const handleAcceptClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card onClick from firing
     // For VELO or PKP events, change status directly without CAS dialog
     if (action.eventName === "niewiem") {
       submitUpdateStatus(action.idAction, "ACCEPTED");
@@ -220,7 +221,10 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
             </Button> )}
 
             <Button
-              onClick={() => submitUpdateStatus(action.idAction, "EDITABLE")}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card onClick from firing
+                submitUpdateStatus(action.idAction, "EDITABLE");
+              }}
               size="sm"
               disabled={submitting}
               className="h-7 px-2.5 text-[12px] bg-zinc-900 hover:bg-orange-600/80 hover:border-orange-600/80 text-amber-50 border border-orange-800"
@@ -229,7 +233,10 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
               <Pencil className="h-3.5 w-3.5 mr-1" aria-hidden="true" /> Editable
             </Button>
             <Button
-              onClick={() => submitUpdateStatus(action.idAction, "DECLINED")}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card onClick from firing
+                submitUpdateStatus(action.idAction, "DECLINED");
+              }}
               size="sm"
               disabled={submitting}
               className="h-7 px-2.5 text-[12px] bg-zinc-900 border-red-800 hover:bg-red-700/70 hover:border-red-700/70 text-red-200 border"

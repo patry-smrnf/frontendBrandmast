@@ -172,7 +172,10 @@ export function CasActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-neutral-900 border-zinc-800 text-white">
+      <DialogContent 
+        className="max-w-2xl max-h-[85vh] overflow-y-auto bg-neutral-900 border-zinc-800 text-white"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">
             CAS Action

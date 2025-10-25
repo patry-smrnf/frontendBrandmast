@@ -121,7 +121,10 @@ export default function TpActionDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950 border-zinc-800 text-white max-w-md w-[95vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent 
+        className="bg-zinc-950 border-zinc-800 text-white max-w-md w-[95vw] max-h-[85vh] overflow-y-auto p-4 sm:p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <DialogTitle className="text-lg sm:text-xl font-bold text-white leading-tight">

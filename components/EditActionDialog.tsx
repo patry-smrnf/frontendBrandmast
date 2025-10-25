@@ -171,7 +171,10 @@ export default function EditActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-900 border-zinc-800 text-gray-100 max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="bg-zinc-900 border-zinc-800 text-gray-100 max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-white">Edytuj Akcję</DialogTitle>
         </DialogHeader>
