@@ -167,12 +167,29 @@ export default function TpActionDetailsDialog({
             <div className="bg-zinc-900/50 rounded-lg p-2 border border-zinc-800">
               <p className="text-xs text-zinc-500 mb-1">Rozpoczęcie</p>
               <p className="text-xs font-medium text-white leading-tight">{formatDateTime(action.since)}</p>
+              {(action.status === "started" || action.status === "finished") && (
+                <>
+                  <p className="text-xs text-zinc-500 mb-1 mt-2">Realny start</p>
+                  <p className="text-xs font-medium text-white leading-tight">
+                    {action.lastStart ? formatDateTime(action.lastStart) : "---"}
+                  </p>
+                </>
+              )}
             </div>
             <div className="bg-zinc-900/50 rounded-lg p-2 border border-zinc-800">
               <p className="text-xs text-zinc-500 mb-1">Zakończenie</p>
               <p className="text-xs font-medium text-white leading-tight">{formatDateTime(action.until)}</p>
+              {(action.status === "started" || action.status === "finished") && (
+                <>
+                  <p className="text-xs text-zinc-500 mb-1 mt-2">Realny stop</p>
+                  <p className="text-xs font-medium text-white leading-tight">
+                    {action.lastStop ? formatDateTime(action.lastStop) : "---"}
+                  </p>
+                </>
+              )}
             </div>
           </div>
+
 
           {/* Location */}
           <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800 space-y-2">

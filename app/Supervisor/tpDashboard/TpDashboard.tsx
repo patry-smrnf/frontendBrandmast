@@ -75,6 +75,7 @@ export default function TpDashboard() {
     return dayKey(today);
   });
   const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [filterUser, setFilterUser] = useState<string>("All");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<TeamCasAction | null>(null);
@@ -182,6 +183,23 @@ export default function TpDashboard() {
     return ["All", ...Array.from(unique).sort()];
   }, [actions]);
 
+  const users = useMemo(() => {
+    const uniqueUsers = new Map<string, { ident: string; firstname: string; lastname: string }>();
+    actions.forEach((a) => {
+      if (!uniqueUsers.has(a.users.ident)) {
+        uniqueUsers.set(a.users.ident, {
+          ident: a.users.ident,
+          firstname: a.users.firstname,
+          lastname: a.users.lastname,
+        });
+      }
+    });
+    const sortedUsers = Array.from(uniqueUsers.values()).sort((a, b) => 
+      `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`)
+    );
+    return [{ ident: "All", firstname: "Wszystkie", lastname: "" }, ...sortedUsers];
+  }, [actions]);
+
   // Filtered actions
   const filtered = useMemo(() => {
     return actions.filter((a) => {
@@ -195,9 +213,10 @@ export default function TpDashboard() {
       }
       
       const statusMatch = filterStatus === "All" || a.status === filterStatus;
-      return dateMatch && statusMatch;
+      const userMatch = filterUser === "All" || a.users.ident === filterUser;
+      return dateMatch && statusMatch && userMatch;
     });
-  }, [actions, filterDate, filterStatus]);
+  }, [actions, filterDate, filterStatus, filterUser]);
 
   // Group by user
   const groupedByUser = useMemo(() => {
@@ -312,7 +331,7 @@ export default function TpDashboard() {
           </div>
 
           {/* Filters - More Compact */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="region" aria-label="Filtry">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="region" aria-label="Filtry">
             <label className="sr-only" htmlFor="filter-date">
               Filtruj po dacie
             </label>
@@ -340,6 +359,22 @@ export default function TpDashboard() {
                 {statuses.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s === "All" ? "Wszystkie" : s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <label className="sr-only" htmlFor="filter-user">
+              Filtruj po użytkowniku
+            </label>
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger id="filter-user" className="bg-zinc-800 border-zinc-700 text-gray-200 focus:ring-zinc-600">
+                <SelectValue placeholder="Filtruj po użytkowniku" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700 text-gray-100 max-h-60 overflow-auto">
+                {users.map((u) => (
+                  <SelectItem key={u.ident} value={u.ident}>
+                    {u.ident === "All" ? "Wszyscy użytkownicy" : `${u.ident} - ${u.firstname} ${u.lastname}`}
                   </SelectItem>
                 ))}
               </SelectContent>

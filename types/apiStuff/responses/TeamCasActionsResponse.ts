@@ -18,6 +18,8 @@ export interface TeamCasAction {
   };
   actionPointsName: string;
   actionPointsStreetAddress: string;
+  lastStart: string | null;
+  lastStop: string | null;
 }
 
 export type TeamCasActionsResponse = TeamCasAction[];
