@@ -46,6 +46,8 @@ import { toast } from "sonner"
 import ContextMenu from "@/components/contextMenu"
 import DarkLoadingPage from "@/components/LoadingScreen"
 import ErrorBoundary from "@/components/ErrorBoundary"
+import { motion, AnimatePresence } from "framer-motion"
+import { Search, UserPlus, Users, CheckCircle, XCircle } from "lucide-react"
 
 // API Response type for the actual JSON structure
 interface ApiBrandmasterResponse {
@@ -54,6 +56,14 @@ interface ApiBrandmasterResponse {
   nazwisko: string;
   logicAccount: string;
   idTourplanner: string;
+}
+
+// API Response type for available brandmasters from CAS
+interface AvailableBrandmaster {
+  idTourplanner: string;
+  firstName: string;
+  lastName: string;
+  ident: string;
 }
 
 export default function MyTeamPage() {
@@ -66,6 +76,12 @@ export default function MyTeamPage() {
   const [error, setError] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [operationLoading, setOperationLoading] = useState(false)
+  
+  // New state for available brandmasters dialog
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [availableBms, setAvailableBms] = useState<AvailableBrandmaster[]>([])
+  const [availableBmsLoading, setAvailableBmsLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
   
   // Refs for cleanup
   const mountedRef = useRef(true)
@@ -101,6 +117,30 @@ export default function MyTeamPage() {
     const startIndex = (page - 1) * pageSize
     return data.slice(startIndex, startIndex + pageSize)
   }, [data, page, pageSize])
+
+  // Filtered available brandmasters based on search
+  const filteredAvailableBms = useMemo(() => {
+    if (!searchQuery.trim()) return availableBms;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return availableBms.filter(bm => {
+      const firstName = bm?.firstName?.toLowerCase() || '';
+      const lastName = bm?.lastName?.toLowerCase() || '';
+      const ident = bm?.ident?.toLowerCase() || '';
+      
+      return firstName.includes(query) || 
+             lastName.includes(query) ||
+             ident.includes(query);
+    });
+  }, [availableBms, searchQuery]);
+
+  // Check if a brandmaster already exists in the current team
+  const isExisting = useCallback((bm: AvailableBrandmaster) => {
+    return data.some(d => 
+      d.tourplannerId === bm.idTourplanner || 
+      d.brandmasterLogin === bm.ident
+    );
+  }, [data]);
 
   // Fetch Data with proper error handling and timeout
   useEffect(() => {
@@ -171,6 +211,103 @@ export default function MyTeamPage() {
       controller.abort()
     }
   }, [mapApiResponseToMyBms])
+
+  // Fetch available brandmasters when dialog opens
+  const fetchAvailableBrandmasters = useCallback(async () => {
+    setAvailableBmsLoading(true);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await apiFetch<AvailableBrandmaster[]>("/api/sv/bmsFromCas", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!Array.isArray(res)) {
+        throw new Error('Invalid response format: expected array');
+      }
+
+      setAvailableBms(res);
+    } catch (error: unknown) {
+      let errorMessage = "Nie udało się pobrać listy brandmasterów.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Operacja została przerwana z powodu przekroczenia czasu.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setAvailableBmsLoading(false);
+    }
+  }, []);
+
+  // Open dialog and fetch available brandmasters
+  const handleOpenAddDialog = useCallback(() => {
+    setAddDialogOpen(true);
+    setSearchQuery("");
+    fetchAvailableBrandmasters();
+  }, [fetchAvailableBrandmasters]);
+
+  // Add brandmaster from available list
+  const handleAddFromList = useCallback(async (bm: AvailableBrandmaster) => {
+    if (operationLoading) return;
+
+    // Check if already exists
+    if (isExisting(bm)) {
+      toast.warning("Ten brandmaster już istnieje w zespole.");
+      return;
+    }
+
+    setOperationLoading(true);
+
+    const newBm = {
+      brandmasterName: bm.firstName,
+      brandmasterLast: bm.lastName,
+      brandmasterLogin: bm.ident,
+      tourplannerId: bm.idTourplanner,
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await apiFetch<{ message: string }>("/api/sv/createBm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newBm),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      toast.success(res?.message || "Brandmaster został dodany pomyślnie.");
+      
+      // Refresh data by reloading
+      window.location.reload();
+    } catch (error: unknown) {
+      let errorMessage = "Nie udało się dodać brandmastera.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Operacja została przerwana z powodu przekroczenia czasu.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setOperationLoading(false);
+    }
+  }, [operationLoading, isExisting]);
 
   // Add Brandmaster with proper validation and error handling
   const handleAdd = useCallback(async () => {
@@ -362,60 +499,122 @@ export default function MyTeamPage() {
             {/* Controls */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div className="flex gap-2">
-                <Dialog open={open} onOpenChange={setOpen}>
+                {/* New Dialog for selecting from available brandmasters */}
+                <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button className="h-8 px-3 bg-neutral-800 hover:bg-neutral-700 text-gray-200 text-sm border border-neutral-700">
-                      + Add
+                    <Button 
+                      onClick={handleOpenAddDialog}
+                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white text-sm border border-blue-700"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Dodaj
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-neutral-950 border border-neutral-800 text-gray-100 p-6 rounded-xl max-w-md">
+                  <DialogContent className="bg-gradient-to-br from-zinc-900/95 to-zinc-800/95 backdrop-blur-xl border border-zinc-700/50 text-gray-100 p-6 rounded-xl max-w-2xl max-h-[80vh]">
                     <DialogHeader>
-                      <DialogTitle className="text-lg font-semibold">Add Brandmaster</DialogTitle>
+                      <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                        <Users className="w-5 h-5" />
+                        Dostępni Brandmasterzy
+                      </DialogTitle>
+                      <p className="text-sm text-zinc-400 mt-1">
+                        Wybierz brandmastera z listy, aby dodać do zespołu
+                      </p>
                     </DialogHeader>
 
-                    <div className="grid gap-3 mt-4">
-                      {[
-                        { label: "Name", key: "brandmasterName" },
-                        { label: "Last", key: "brandmasterLast" },
-                        { label: "Login", key: "brandmasterLogin" },
-                      ].map(({ label, key }) => (
-                        <div key={key}>
-                          <Label className="text-xs text-gray-400">{label}</Label>
-                          <Input
-                            className="h-8 bg-neutral-900 border-neutral-800 text-sm"
-                            value={(newBrandmaster as any)[key]}
-                            onChange={(e) =>
-                              setNewBrandmaster((p) => ({
-                                ...p,
-                                [key]: e.target.value,
-                              }))
-                            }
-                          />
-                        </div>
-                      ))}
-
-                      <div>
-                        <Label className="text-xs text-gray-400">Tourplanner ID (optional)</Label>
+                    <div className="mt-4 space-y-4">
+                      {/* Search */}
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <Input
-                          className="h-8 bg-neutral-900 border-neutral-800 text-sm"
-                          value={newBrandmaster.tourplannerId ?? ""}
-                          onChange={(e) =>
-                            setNewBrandmaster((p) => ({
-                              ...p,
-                              tourplannerId: e.target.value || null,
-                            }))
-                          }
+                          placeholder="Szukaj po imieniu, nazwisku lub identyfikatorze..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10 bg-zinc-800/50 border-zinc-600 text-white placeholder-zinc-400 focus:border-blue-500"
                         />
                       </div>
 
-                      <Button
-                        onClick={handleAdd}
-                        disabled={!newBrandmaster.brandmasterName || !newBrandmaster.brandmasterLogin || operationLoading}
-                        className="h-8 mt-1 bg-blue-600 hover:bg-blue-500 text-sm font-medium disabled:opacity-50"
-                        aria-label="Dodaj nowego brandmastera"
-                      >
-                        {operationLoading ? "Dodawanie..." : "Dodaj"}
-                      </Button>
+                      {/* List of available brandmasters */}
+                      <div className="overflow-y-auto max-h-96 border border-zinc-700/50 rounded-lg bg-zinc-800/20">
+                        {availableBmsLoading ? (
+                          <div className="flex items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          </div>
+                        ) : filteredAvailableBms.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+                            <Users className="w-12 h-12 mb-2" />
+                            <p className="text-lg font-medium">
+                              {searchQuery ? "Nie znaleziono wyników" : "Brak dostępnych brandmasterów"}
+                            </p>
+                            <p className="text-sm">
+                              {searchQuery ? "Spróbuj zmienić kryteria wyszukiwania" : ""}
+                            </p>
+                          </div>
+                        ) : (
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-zinc-800/50 border-b border-zinc-700/50">
+                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Imię</TableHead>
+                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Nazwisko</TableHead>
+                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Identyfikator</TableHead>
+                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Status</TableHead>
+                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Akcja</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <AnimatePresence>
+                                {filteredAvailableBms.map((bm, index) => {
+                                  const exists = isExisting(bm);
+                                  return (
+                                    <motion.tr
+                                      key={bm.idTourplanner}
+                                      initial={{ opacity: 0, y: 20 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: -20 }}
+                                      transition={{ duration: 0.2, delay: index * 0.03 }}
+                                      className={cn(
+                                        "transition-all duration-200 hover:bg-zinc-700/30 border-b border-zinc-700/30",
+                                        exists && "bg-green-900/20"
+                                      )}
+                                    >
+                                      <TableCell className="text-zinc-200 text-sm">{bm.firstName}</TableCell>
+                                      <TableCell className="text-zinc-200 text-sm">{bm.lastName}</TableCell>
+                                      <TableCell className="text-blue-400 text-sm font-mono">{bm.ident}</TableCell>
+                                      <TableCell className="text-sm">
+                                        {exists ? (
+                                          <span className="flex items-center gap-1 text-green-400">
+                                            <CheckCircle className="w-4 h-4" />
+                                            W zespole
+                                          </span>
+                                        ) : (
+                                          <span className="flex items-center gap-1 text-zinc-400">
+                                            <XCircle className="w-4 h-4" />
+                                            Dostępny
+                                          </span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleAddFromList(bm)}
+                                          disabled={exists || operationLoading}
+                                          className={cn(
+                                            "h-7 px-2 text-xs",
+                                            exists 
+                                              ? "bg-zinc-700 text-zinc-400 cursor-not-allowed" 
+                                              : "bg-blue-600 hover:bg-blue-500 text-white"
+                                          )}
+                                        >
+                                          {operationLoading ? "Dodawanie..." : exists ? "W zespole" : "Dodaj"}
+                                        </Button>
+                                      </TableCell>
+                                    </motion.tr>
+                                  );
+                                })}
+                              </AnimatePresence>
+                            </TableBody>
+                          </Table>
+                        )}
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
