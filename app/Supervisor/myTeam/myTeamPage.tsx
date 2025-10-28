@@ -484,57 +484,59 @@ export default function MyTeamPage() {
         )}
       </div>
 
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-gray-200 p-6 flex items-center justify-center">
-        <Card className="w-full max-w-6xl bg-neutral-950 border border-neutral-900/70 rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden">
-          <CardHeader className="border-b border-neutral-900 pb-3 flex justify-between items-center">
-            <CardTitle className="text-xl font-semibold tracking-tight text-gray-100">
-              Brandmasters
-            </CardTitle>
-            <div className="text-xs text-neutral-500 uppercase tracking-wide">
-              Management Panel
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-zinc-900 to-black text-gray-200 p-3 sm:p-6 flex items-center justify-center">
+        <Card className="w-full max-w-6xl bg-neutral-950 border border-neutral-900/70 rounded-xl sm:rounded-2xl shadow-[0_0_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden">
+          <CardHeader className="border-b border-neutral-900 pb-3 px-3 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <CardTitle className="text-lg sm:text-xl font-semibold tracking-tight text-gray-100">
+                Brandmasters
+              </CardTitle>
+              <div className="text-xs text-neutral-500 uppercase tracking-wide">
+                Management Panel
+              </div>
             </div>
           </CardHeader>
 
-          <CardContent className="pt-4">
+          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
             {/* Controls */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4">
+              <div className="flex flex-wrap gap-2">
                 {/* New Dialog for selecting from available brandmasters */}
                 <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
                       onClick={handleOpenAddDialog}
-                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white text-sm border border-blue-700"
+                      className="h-8 px-3 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm border border-blue-700 flex-1 sm:flex-initial"
                     >
-                      <UserPlus className="w-4 h-4 mr-1" />
+                      <UserPlus className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                       Dodaj
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-gradient-to-br from-zinc-900/95 to-zinc-800/95 backdrop-blur-xl border border-zinc-700/50 text-gray-100 p-6 rounded-xl max-w-2xl max-h-[80vh]">
+                  <DialogContent className="bg-gradient-to-br from-zinc-900/95 to-zinc-800/95 backdrop-blur-xl border border-zinc-700/50 text-gray-100 p-4 sm:p-6 rounded-xl w-[95vw] sm:w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh]">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-                        <Users className="w-5 h-5" />
+                      <DialogTitle className="text-base sm:text-xl font-semibold flex items-center gap-2">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                         Dostępni Brandmasterzy
                       </DialogTitle>
-                      <p className="text-sm text-zinc-400 mt-1">
+                      <p className="text-xs sm:text-sm text-zinc-400 mt-1">
                         Wybierz brandmastera z listy, aby dodać do zespołu
                       </p>
                     </DialogHeader>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
                       {/* Search */}
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                        <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-400" />
                         <Input
-                          placeholder="Szukaj po imieniu, nazwisku lub identyfikatorze..."
+                          placeholder="Szukaj..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 bg-zinc-800/50 border-zinc-600 text-white placeholder-zinc-400 focus:border-blue-500"
+                          className="pl-8 sm:pl-10 h-9 text-sm bg-zinc-800/50 border-zinc-600 text-white placeholder-zinc-400 focus:border-blue-500"
                         />
                       </div>
 
                       {/* List of available brandmasters */}
-                      <div className="overflow-y-auto max-h-96 border border-zinc-700/50 rounded-lg bg-zinc-800/20">
+                      <div className="overflow-x-auto overflow-y-auto max-h-[50vh] sm:max-h-96 border border-zinc-700/50 rounded-lg bg-zinc-800/20">
                         {availableBmsLoading ? (
                           <div className="flex items-center justify-center py-12">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -553,11 +555,11 @@ export default function MyTeamPage() {
                           <Table>
                             <TableHeader>
                               <TableRow className="bg-zinc-800/50 border-b border-zinc-700/50">
-                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Imię</TableHead>
-                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Nazwisko</TableHead>
-                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Identyfikator</TableHead>
-                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Status</TableHead>
-                                <TableHead className="text-zinc-300 text-xs uppercase font-semibold">Akcja</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Imię</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Nazwisko</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden sm:table-cell">Identyfikator</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden md:table-cell">Status</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Akcja</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -576,35 +578,40 @@ export default function MyTeamPage() {
                                         exists && "bg-green-900/20"
                                       )}
                                     >
-                                      <TableCell className="text-zinc-200 text-sm">{bm.firstName}</TableCell>
-                                      <TableCell className="text-zinc-200 text-sm">{bm.lastName}</TableCell>
-                                      <TableCell className="text-blue-400 text-sm font-mono">{bm.ident}</TableCell>
-                                      <TableCell className="text-sm">
+                                      <TableCell className="text-zinc-200 text-xs sm:text-sm px-2">{bm.firstName}</TableCell>
+                                      <TableCell className="text-zinc-200 text-xs sm:text-sm px-2">{bm.lastName}</TableCell>
+                                      <TableCell className="text-blue-400 text-xs sm:text-sm font-mono px-2 hidden sm:table-cell">{bm.ident}</TableCell>
+                                      <TableCell className="text-xs sm:text-sm px-2 hidden md:table-cell">
                                         {exists ? (
                                           <span className="flex items-center gap-1 text-green-400">
-                                            <CheckCircle className="w-4 h-4" />
-                                            W zespole
+                                            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span className="hidden lg:inline">W zespole</span>
                                           </span>
                                         ) : (
                                           <span className="flex items-center gap-1 text-zinc-400">
-                                            <XCircle className="w-4 h-4" />
-                                            Dostępny
+                                            <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                            <span className="hidden lg:inline">Dostępny</span>
                                           </span>
                                         )}
                                       </TableCell>
-                                      <TableCell>
+                                      <TableCell className="px-2">
                                         <Button
                                           size="sm"
                                           onClick={() => handleAddFromList(bm)}
                                           disabled={exists || operationLoading}
                                           className={cn(
-                                            "h-7 px-2 text-xs",
+                                            "h-6 sm:h-7 px-1.5 sm:px-2 text-[10px] sm:text-xs whitespace-nowrap",
                                             exists 
                                               ? "bg-zinc-700 text-zinc-400 cursor-not-allowed" 
                                               : "bg-blue-600 hover:bg-blue-500 text-white"
                                           )}
                                         >
-                                          {operationLoading ? "Dodawanie..." : exists ? "W zespole" : "Dodaj"}
+                                          {operationLoading ? "..." : exists ? (
+                                            <CheckCircle className="w-3 h-3 sm:hidden" />
+                                          ) : (
+                                            <span className="sm:hidden">+</span>
+                                          )}
+                                          <span className="hidden sm:inline">{operationLoading ? "Dodawanie..." : exists ? "W zespole" : "Dodaj"}</span>
                                         </Button>
                                       </TableCell>
                                     </motion.tr>
@@ -623,14 +630,14 @@ export default function MyTeamPage() {
                   variant="destructive"
                   onClick={handleDelete}
                   disabled={selected.length === 0 || operationLoading}
-                  className="h-8 px-3 text-sm bg-red-700 hover:bg-red-600 border border-red-800 disabled:opacity-50"
+                  className="h-8 px-3 text-xs sm:text-sm bg-red-700 hover:bg-red-600 border border-red-800 disabled:opacity-50 flex-1 sm:flex-initial"
                   aria-label={`Usuń ${selected.length} wybranych brandmasterów`}
                 >
                   {operationLoading ? "Usuwanie..." : `Usuń (${selected.length})`}
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-xs sm:text-sm">
                 <Label className="text-gray-400">Rows:</Label>
                 <Select
                   value={pageSize.toString()}
@@ -639,7 +646,7 @@ export default function MyTeamPage() {
                     setPage(1)
                   }}
                 >
-                  <SelectTrigger className="h-8 w-20 bg-neutral-900 border-neutral-800 text-gray-200 text-sm">
+                  <SelectTrigger className="h-8 w-16 sm:w-20 bg-neutral-900 border-neutral-800 text-gray-200 text-xs sm:text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-neutral-950 border-neutral-800 text-gray-200">
@@ -654,11 +661,11 @@ export default function MyTeamPage() {
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden border border-neutral-900 rounded-xl" role="region" aria-label="Lista brandmasterów">
+            <div className="overflow-x-auto border border-neutral-900 rounded-lg sm:rounded-xl" role="region" aria-label="Lista brandmasterów">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-neutral-950/80">
-                    <TableHead className="w-8" aria-label="Zaznacz wszystkie">
+                    <TableHead className="w-8 px-2 sm:px-3" aria-label="Zaznacz wszystkie">
                       <input
                         type="checkbox"
                         className="accent-blue-600"
@@ -673,17 +680,17 @@ export default function MyTeamPage() {
                         aria-label="Zaznacz wszystkie brandmastery"
                       />
                     </TableHead>
-                    {["ID", "Imię", "Nazwisko", "Login", "Tourplanner"].map((h) => (
-                      <TableHead key={h} className="text-gray-400 text-xs uppercase">
-                        {h}
-                      </TableHead>
-                    ))}
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3 hidden sm:table-cell">ID</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3">Imię</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3 hidden md:table-cell">Nazwisko</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3">Login</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3 hidden lg:table-cell">Tourplanner</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {visibleData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={6} className="text-center py-6 sm:py-8 text-gray-500 text-xs sm:text-sm">
                         Brak brandmasterów do wyświetlenia
                       </TableCell>
                     </TableRow>
@@ -697,7 +704,7 @@ export default function MyTeamPage() {
                         )}
                         aria-label={`Brandmaster ${item.brandmasterName} ${item.brandmasterLast}`}
                       >
-                        <TableCell className="px-3">
+                        <TableCell className="px-2 sm:px-3">
                           <input
                             type="checkbox"
                             className="accent-blue-600"
@@ -712,13 +719,13 @@ export default function MyTeamPage() {
                             aria-label={`Zaznacz ${item.brandmasterName} ${item.brandmasterLast}`}
                           />
                         </TableCell>
-                        <TableCell className="text-gray-400 text-sm">{item.brandmasterId}</TableCell>
-                        <TableCell className="text-gray-400 text-sm">{item.brandmasterName}</TableCell>
-                        <TableCell className="text-gray-400 text-sm">{item.brandmasterLast}</TableCell>
-                        <TableCell className="text-sm font-mono text-blue-500">
+                        <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden sm:table-cell">{item.brandmasterId}</TableCell>
+                        <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3">{item.brandmasterName}</TableCell>
+                        <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden md:table-cell">{item.brandmasterLast}</TableCell>
+                        <TableCell className="text-xs sm:text-sm font-mono text-blue-500 px-2 sm:px-3">
                           {item.brandmasterLogin}
                         </TableCell>
-                        <TableCell className="text-gray-400 text-sm">
+                        <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden lg:table-cell">
                           {item.tourplannerId ?? <span className="text-neutral-600">—</span>}
                         </TableCell>
                       </TableRow>
@@ -729,17 +736,17 @@ export default function MyTeamPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-400">
-              <span>
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
+              <span className="text-center sm:text-left">
                 Page <span className="text-gray-200">{page}</span> /{" "}
                 <span className="text-gray-200">{totalPages}</span>
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   disabled={page === 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="h-8 px-3 bg-neutral-900 border-neutral-800 text-gray-300 hover:bg-neutral-800"
+                  className="h-8 px-3 bg-neutral-900 border-neutral-800 text-gray-300 hover:bg-neutral-800 text-xs sm:text-sm flex-1 sm:flex-initial"
                 >
                   Prev
                 </Button>
@@ -747,7 +754,7 @@ export default function MyTeamPage() {
                   variant="outline"
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="h-8 px-3 bg-neutral-900 border-neutral-800 text-gray-300 hover:bg-neutral-800"
+                  className="h-8 px-3 bg-neutral-900 border-neutral-800 text-gray-300 hover:bg-neutral-800 text-xs sm:text-sm flex-1 sm:flex-initial"
                 >
                   Next
                 </Button>
