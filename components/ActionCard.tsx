@@ -90,6 +90,7 @@ const MyActionCard: React.FC<Props> = ({ action }) => {
         </div>
 
         {/* User + Delete section */}
+        {status !== "ACCEPTED" && (
         <div className="flex items-center justify-between text-xs text-gray-300 mt-2">
           <Button
             onClick={() => handleDeleteAction(id)}
@@ -97,9 +98,10 @@ const MyActionCard: React.FC<Props> = ({ action }) => {
             size="sm"
             className="h-6 px-2 py-0 text-[11px] flex items-center gap-1 bg-red-900/20 border-zinc-700 hover:bg-red-800 hover:text-red-300 text-gray-200"
           >
-            <Trash className="h-3 w-3" /> Usuń
-          </Button>
-        </div>
+              <Trash className="h-3 w-3" /> Usuń
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
