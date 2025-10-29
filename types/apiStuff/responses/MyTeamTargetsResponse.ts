@@ -2,7 +2,7 @@
 export interface Territory {
   idTerritory: number;
   territoryIdent: string;
-  tpIDArea: string;
+  tpIdTerritory: string;
 }
 
 export interface Team {

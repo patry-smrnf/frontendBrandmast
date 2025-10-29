@@ -106,11 +106,10 @@ function dayLabel(date?: Date) {
 export default function SvDashboard() {
   const [uiActions, setUiActions] = useState<UIAction[]>([]);
   const [filterBrandmaster, setFilterBrandmaster] = useState<string>("All");
-  const [filterDay, setFilterDay] = useState<string>(() => {
-    // Default to today's date in YYYY-MM-DD format
-    const today = new Date();
-    return dayKey(today);
-  });
+  // Default to today's date in YYYY-MM-DD format
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [filterDay, setFilterDay] = useState<string>(todayKey);
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [filterEvent, setFilterEvent] = useState<string>("All");
   const [loading, setLoading] = useState<boolean>(true);
@@ -208,6 +207,20 @@ export default function SvDashboard() {
             const until = parseDateSafe(a.until) ?? new Date(0);
             const created = parseDateSafe(a.createdAt ?? null);
 
+            // Debug log for November actions
+            if (a.since && a.since.includes("2025-11")) {
+              console.log("November action found:", {
+                id: a.id,
+                since: a.since,
+                parsedSince: since,
+                until: a.until,
+                parsedUntil: until,
+                shopName: a.shop?.name,
+                eventName: a.event?.name,
+                status: a.status
+              });
+            }
+
             return {
               idAction: Number.isFinite(a.id) ? a.id : -1,
               shopID: a.shop?.id ?? undefined,
@@ -227,6 +240,13 @@ export default function SvDashboard() {
 
         // sort by earliest start
         flattened.sort((a, b) => a.actionSince.getTime() - b.actionSince.getTime());
+
+        console.log("Total actions loaded:", flattened.length);
+        console.log("All action dates:", flattened.map(a => ({
+          id: a.idAction,
+          date: a.actionSince.toISOString(),
+          shopName: a.shopName
+        })));
 
         if (mounted && !ac.signal.aborted) {
           setUiActions(flattened);
@@ -295,23 +315,29 @@ export default function SvDashboard() {
 
   // Filtered
   const filtered = useMemo(() => {
-    return uiActions.filter((a) => {
+    const result = uiActions.filter((a) => {
       const bmMatch = filterBrandmaster === "All" || a.brandmasterLogin === filterBrandmaster;
       
-      // Changed: show actions SINCE the selected day (on or after), not just matching that day
+      // Filter by "since" day (show actions from this day onwards)
       let dayMatch = true;
       if (filterDay !== "All") {
         const filterDate = new Date(filterDay);
         // Compare dates: only compare date parts (ignore time)
         const actionDate = new Date(a.actionSince.getFullYear(), a.actionSince.getMonth(), a.actionSince.getDate());
         const compareDate = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
-        dayMatch = actionDate >= compareDate;
+        dayMatch = actionDate.getTime() >= compareDate.getTime();
       }
       
       const statusMatch = filterStatus === "All" || a.actionStatus === filterStatus;
       const eventMatch = filterEvent === "All" || a.eventName === filterEvent;
       return bmMatch && dayMatch && statusMatch && eventMatch;
     });
+    
+    console.log("Filter applied:", { filterBrandmaster, filterDay, filterStatus, filterEvent });
+    console.log("Filtered results:", result.length, "actions");
+    console.log("Filtered action dates:", result.map(a => a.actionSince.toISOString().split('T')[0]));
+    
+    return result;
   }, [uiActions, filterBrandmaster, filterDay, filterStatus, filterEvent]);
 
   // Group by date ascending (earliest first)
@@ -430,11 +456,11 @@ export default function SvDashboard() {
             </Select>
 
             <label className="sr-only" htmlFor="filter-day">
-              Filtruj po dniu
+              Akcje od dnia
             </label>
             <Select value={filterDay} onValueChange={setFilterDay}>
               <SelectTrigger id="filter-day" className="bg-zinc-800 border-zinc-700 text-gray-200 focus:ring-zinc-600">
-                <SelectValue placeholder="Filtruj po dniu" />
+                <SelectValue placeholder="Akcje od dnia" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-800 border-zinc-700 text-gray-100 max-h-60 overflow-auto">
                 {days.map((d) => (

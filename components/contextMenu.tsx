@@ -8,7 +8,7 @@ import {
   PlusCircle,
   LayoutDashboard,
   Settings,
-  ClipboardPlus ,
+  MonitorCog ,
   Sheet,
   Users,
   Store,
@@ -39,7 +39,7 @@ export default function ContextMenu({ closeMenu, type }: ContextMenuProps) {
           { label: "Zarządzaj Targets", icon: Crosshair, route: "/Supervisor/myTargets" },
           { label: "Zarządzaj BM", icon: Users, route: "/Supervisor/myTeam" },
           { label: "Excel Dyspo", icon: Sheet , route: "/Supervisor/excelGenerator" },
-          { label: "Panel CAS", icon: Users, route: "/Supervisor/tpDashboard" },
+          { label: "Panel CAS", icon: MonitorCog, route: "/Supervisor/tpDashboard" },
           { label: "Dashboard", icon: LayoutDashboard, route: "/" },
         ]
       : [

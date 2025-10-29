@@ -22,20 +22,30 @@ import type { MyAction } from "@/types/apiStuff/responses/MyAction.types";
 
 /* -------------------- Utils -------------------- */
 
-// Safely extract "MM.YYYY" for grouping/filtering by month
-function monthKey(dateStr?: string): string | null {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return null;
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = String(d.getFullYear());
-  return `${month}.${year}`;
-}
-
-// Format date nicely (e.g., "13 października 2025")
+// Format date nicely with day name (e.g., "Poniedziałek, 13 października 2025")
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "Nieznana data";
+  return d.toLocaleDateString("pl-PL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+// Extract day key in YYYY-MM-DD format
+function dayKey(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Format day label for display
+function dayLabel(dateKey: string): string {
+  const d = new Date(dateKey);
+  if (isNaN(d.getTime())) return dateKey;
   return d.toLocaleDateString("pl-PL", {
     day: "numeric",
     month: "long",
@@ -49,8 +59,11 @@ export default function BmDashboard() {
   const [actions, setActions] = useState<MyAction[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split("T")[0];
+  
   const [filterShop, setFilterShop] = useState("All");
-  const [filterMonth, setFilterMonth] = useState("All");
+  const [filterDay, setFilterDay] = useState(today);
   const [filterStatus, setFilterStatus] = useState("All");
 
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -87,25 +100,33 @@ export default function BmDashboard() {
     return ["All", ...uniqueShops];
   }, [actions]);
 
-  const months = useMemo(() => {
-    const monthSet = new Set<string>();
-    for (const a of actions) {
-      const key = monthKey(a.since);
-      if (key) monthSet.add(key);
-    }
-    return ["All", ...Array.from(monthSet)];
-  }, [actions]);
+  const days = useMemo(() => {
+    const uniqueDays = new Set(actions.map((a) => dayKey(a.since)).filter(Boolean) as string[]);
+    // Always include today in the list
+    uniqueDays.add(today);
+    const validDays = Array.from(uniqueDays);
+    validDays.sort((a, b) => (a > b ? 1 : -1)); // Sort ascending (earliest first)
+    return ["All", ...validDays];
+  }, [actions, today]);
 
   /* -------------------- Filtering logic -------------------- */
   const filtered = useMemo(() => {
     return actions.filter((a) => {
       const shopMatch = filterShop === "All" || a.event?.name === filterShop;
-      const monthMatch =
-        filterMonth === "All" || monthKey(a.since) === filterMonth;
+      
+      // Filter by actions starting from the selected date onwards
+      let dayMatch = true;
+      if (filterDay !== "All") {
+        const actionDate = new Date(a.since);
+        const filterDate = new Date(filterDay);
+        // Compare dates: show actions that start on or after the filter date
+        dayMatch = actionDate >= filterDate;
+      }
+      
       const statusMatch = filterStatus === "All" || a.status === filterStatus;
-      return shopMatch && monthMatch && statusMatch;
+      return shopMatch && dayMatch && statusMatch;
     });
-  }, [actions, filterShop, filterMonth, filterStatus]);
+  }, [actions, filterShop, filterDay, filterStatus]);
 
   /* -------------------- Calculate total time -------------------- */
   const totalTime = useMemo(() => {
@@ -132,13 +153,19 @@ export default function BmDashboard() {
     const groups = new Map<string, MyAction[]>();
 
     for (const a of filtered) {
-      const dayKey = new Date(a.since).toISOString().split("T")[0]; // YYYY-MM-DD
-      if (!groups.has(dayKey)) groups.set(dayKey, []);
-      groups.get(dayKey)!.push(a);
+      const key = new Date(a.since).toISOString().split("T")[0]; // YYYY-MM-DD
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(a);
     }
 
+    // Sort actions within each group by time (nearest to farthest)
+    groups.forEach((actions) => {
+      actions.sort((a, b) => new Date(a.since).getTime() - new Date(b.since).getTime());
+    });
+
+    // Sort groups by date (nearest to farthest)
     return Array.from(groups.entries()).sort(
-      (a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime()
+      (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
     );
   }, [filtered]);
 
@@ -261,6 +288,19 @@ export default function BmDashboard() {
               </SelectContent>
             </Select>
 
+            <Select value={filterDay} onValueChange={setFilterDay}>
+              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-gray-200 focus:ring-zinc-600">
+                <SelectValue placeholder="Od dnia" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-800 border-zinc-700 text-gray-100 max-h-60 overflow-auto">
+                {days.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d === "All" ? "Wszystkie" : dayLabel(d)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="bg-zinc-800 border-zinc-700 text-gray-200 focus:ring-zinc-600">
                 <SelectValue placeholder="Filtruj po statusie" />
@@ -270,19 +310,6 @@ export default function BmDashboard() {
                 <SelectItem value="EDITABLE">Do edycji</SelectItem>
                 <SelectItem value="ACCEPTED">Zatwierdzone</SelectItem>
                 <SelectItem value="DECLINED">Odrzucone</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-gray-200 focus:ring-zinc-600">
-                <SelectValue placeholder="Filtruj po miesiącu" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700 text-gray-100">
-                {months.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m === "All" ? "Wszystkie miesiące" : m}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
