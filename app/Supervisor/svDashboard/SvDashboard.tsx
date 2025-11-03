@@ -382,6 +382,17 @@ export default function SvDashboard() {
     toast.success("Akcja zaktualizowana pomyślnie");
   }, [selectedAction]);
 
+  const handleStatusChange = useCallback((actionId: number, newStatus: string) => {
+    // Update the action status in the local state
+    setUiActions((prevActions) =>
+      prevActions.map((action) =>
+        action.idAction === actionId
+          ? { ...action, actionStatus: newStatus }
+          : action
+      )
+    );
+  }, []);
+
   if (loading) return <DarkLoadingPage />;
 
   if (error) {
@@ -519,7 +530,11 @@ export default function SvDashboard() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {actions.map((a) => (
                       <ErrorBoundary key={`${a.idAction}-${a.brandmasterLogin ?? "bm"}`}>
-                        <BrandmasterActionCard action={a} onClick={handleCardClick} />
+                        <BrandmasterActionCard 
+                          action={a} 
+                          onClick={handleCardClick}
+                          onStatusChange={handleStatusChange}
+                        />
                       </ErrorBoundary>
                     ))}
                   </div>

@@ -8,6 +8,7 @@ import { apiFetch } from "@/utils/apiFetch";
 import { AuthMeType } from "@/types/AuthMe";
 import NotAuthorized from "./NotAuthorized/page";
 import DarkLoadingPage from "@/components/LoadingScreen";
+import AdminPanel from "./Admin/AdminPanel";
 
 type UserRole = "BM" | "SV" | "ADMIN" | null;
 
@@ -51,6 +52,7 @@ export default function Home() {
 
   if (role === "BM") return <BmDashboard />;
   if (role === "SV") return <SvDashboard />;
+  if(role === "ADMIN") return <AdminPanel />;
  
   return <NotAuthorized />;
 }

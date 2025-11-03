@@ -13,7 +13,8 @@ import {
   Users,
   Store,
   Crosshair,
-  Info
+  Info,
+  Calendar
 } from "lucide-react"; // optional icons
 import clsx from "clsx";
 
@@ -35,6 +36,7 @@ export default function ContextMenu({ closeMenu, type }: ContextMenuProps) {
             ]
       : type === "SV"
       ? [
+          { label: "Planer Akcji", icon: Calendar, route: "/Supervisor/actionPlanner" },
           { label: "Zarządzaj Shops", icon: Store, route: "/Supervisor/myShops" },
           { label: "Zarządzaj Targets", icon: Crosshair, route: "/Supervisor/myTargets" },
           { label: "Zarządzaj BM", icon: Users, route: "/Supervisor/myTeam" },

@@ -149,6 +149,7 @@ export default function EditActionDialog({
         shopID: resolvedShopId,
         shopAddress: updatedShop?.address || shopAddress,
         shopName: updatedShop?.name || action.shopName,
+        eventName: updatedShop?.event?.name || action.eventName,
         actionSince: sinceDate,
         actionUntil: untilDate,
       };

@@ -29,6 +29,7 @@ export interface UIAction {
 interface Props {
   action: UIAction;
   onClick?: (action: UIAction) => void;
+  onStatusChange?: (actionId: number, newStatus: string) => void;
 }
 
 function formatDateTime(someDate?: Date | null) {
@@ -65,7 +66,7 @@ function formatTime(someDate?: Date | null) {
   }
 }
 
-const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
+const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick, onStatusChange }) => {
   const [submitting, setSubmitting] = useState(false);
   const [casDialogOpen, setCasDialogOpen] = useState(false);
 
@@ -96,8 +97,8 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
         });
 
         toast.success(res?.message ?? `Status zmieniony na ${status}`);
-        // Reload page to reflect changes
-        window.location.reload();
+        // Notify parent component to update state instead of reloading
+        onStatusChange?.(actionIdFromCard, status);
       } catch (error) {
         console.error("submitUpdateStatus error:", error);
         const errorMessage = error instanceof Error ? error.message : "Nie udało się zmienić statusu.";
@@ -106,7 +107,7 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
         setSubmitting(false);
       }
     },
-    [submitting]
+    [submitting, onStatusChange]
   );
 
   const handleAcceptClick = useCallback((e: React.MouseEvent) => {
@@ -256,6 +257,10 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick }) => {
         onSuccess={() => {
           // Optionally refresh or update the action list
           toast.success("Akcje CAS zostały utworzone");
+        }}
+        onStatusChange={(actionId, newStatus) => {
+          // Forward status change to parent
+          onStatusChange?.(actionId, newStatus);
         }}
       />
       )}

@@ -41,6 +41,7 @@ interface CasActionDialogProps {
     brandmasterNazwisko?: string;
   };
   onSuccess?: () => void;
+  onStatusChange?: (actionId: number, newStatus: string) => void;
 }
 
 function formatTime(date: Date): string {
@@ -110,6 +111,7 @@ export function CasActionDialog({
   onOpenChange,
   action,
   onSuccess,
+  onStatusChange,
 }: CasActionDialogProps) {
   const [submitting, setSubmitting] = useState(false);
   const [actionName, setActionName] = useState("");
@@ -131,14 +133,18 @@ export function CasActionDialog({
     setSubmitting(true);
     
     try {
-      apiFetch<{ message?: string }>("/api/sv/editActionStatus", {
+      const statusRes = await apiFetch<{ message?: string }>("/api/sv/editActionStatus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           idAction: action.idAction,
           status: "ACCEPTED",
         }),
-      }).then((res) => toast.success(res.message)).catch((err) => toast.error(String(err)));
+      });
+      
+      toast.success(statusRes.message ?? "Status zmieniony na ACCEPTED");
+      // Notify parent component about status change
+      onStatusChange?.(action.idAction, "ACCEPTED");
       
       console.log(casActions);
       // Make requests for each CAS action chunk

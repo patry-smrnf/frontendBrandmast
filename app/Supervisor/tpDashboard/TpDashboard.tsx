@@ -118,7 +118,17 @@ export default function TpDashboard() {
           setError(null);
         }
 
-        const res = await apiFetch<TeamCasActionsResponse>("/api/sv/getTeamCasActions", {
+        // Calculate today and tomorrow dates
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const startDate = dayKey(today);
+        const endDate = dayKey(tomorrow);
+        
+        const url = `/api/sv/getTeamCasActions?start=${startDate}&end=${endDate}`;
+
+        const res = await apiFetch<TeamCasActionsResponse>(url, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           signal: ac.signal,
