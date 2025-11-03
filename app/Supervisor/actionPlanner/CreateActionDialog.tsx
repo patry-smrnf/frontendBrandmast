@@ -248,7 +248,7 @@ export default function CreateActionDialog({ open, onOpenChange, onSuccess }: Pr
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-white">Zaplanuj nową akcję</DialogTitle>
           <DialogDescription className="text-gray-400 text-sm">
-            Wypełnij poniższe pola, aby zaplanować nową akcję
+            Nalezy wypelnic adres, godziny, aby zaplanować nową akcję
           </DialogDescription>
         </DialogHeader>
 
