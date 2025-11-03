@@ -31,6 +31,7 @@ export default function ContextMenu({ closeMenu, type }: ContextMenuProps) {
         type === "BM"
         ? [ { label: "Dodaj Akcję", icon: PlusCircle, route: "/Brandmaster/actionDetails?newAction=true" },
             { label: "Statystyki", icon: BarChart2, route: "/Brandmaster/stats" },
+            { label: "My Data", icon: Settings, route: "/Brandmaster/myData" },
             { label: "Helper", icon: Info, route: "/Brandmaster/helpMe" },
             { label: "Dashboard", icon: LayoutDashboard, route: "/" }
             ]

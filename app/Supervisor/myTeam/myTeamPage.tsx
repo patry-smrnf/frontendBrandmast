@@ -56,6 +56,7 @@ interface ApiBrandmasterResponse {
   nazwisko: string;
   logicAccount: string;
   idTourplanner: string;
+  nrKasoterminal: number;
 }
 
 // API Response type for available brandmasters from CAS
@@ -92,6 +93,7 @@ export default function MyTeamPage() {
     brandmasterLast: "",
     brandmasterLogin: "",
     tourplannerId: null,
+    nrKasoterminal: 0,
   })
 
   const menuRef = useRef<HTMLDivElement | null>(null)
@@ -105,6 +107,7 @@ export default function MyTeamPage() {
       brandmasterLast: item.nazwisko,
       brandmasterLogin: item.logicAccount,
       tourplannerId: item.idTourplanner || null,
+      nrKasoterminal: item.nrKasoterminal || null,
     }))
   }, [])
 
@@ -371,6 +374,7 @@ export default function MyTeamPage() {
         brandmasterLast: "",
         brandmasterLogin: "",
         tourplannerId: null,
+        nrKasoterminal: 0,
       })
       setOpen(false)
     }
@@ -557,8 +561,7 @@ export default function MyTeamPage() {
                               <TableRow className="bg-zinc-800/50 border-b border-zinc-700/50">
                                 <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Imię</TableHead>
                                 <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Nazwisko</TableHead>
-                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden sm:table-cell">Identyfikator</TableHead>
-                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden md:table-cell">Status</TableHead>
+                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden sm:table-cell">Identyfikator</TableHead>                                <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2 hidden md:table-cell">Status</TableHead>
                                 <TableHead className="text-zinc-300 text-[10px] sm:text-xs uppercase font-semibold px-2">Akcja</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -685,6 +688,7 @@ export default function MyTeamPage() {
                     <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3 hidden md:table-cell">Nazwisko</TableHead>
                     <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3">Login</TableHead>
                     <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3 hidden lg:table-cell">Tourplanner</TableHead>
+                    <TableHead className="text-gray-400 text-[10px] sm:text-xs uppercase px-2 sm:px-3">Nr Kasoterminal</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -725,10 +729,12 @@ export default function MyTeamPage() {
                         <TableCell className="text-xs sm:text-sm font-mono text-blue-500 px-2 sm:px-3">
                           {item.brandmasterLogin}
                         </TableCell>
-                        <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden lg:table-cell">
-                          {item.tourplannerId ?? <span className="text-neutral-600">—</span>}
-                        </TableCell>
-                      </TableRow>
+                          <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden lg:table-cell">
+                            {item.tourplannerId ?? <span className="text-neutral-600">—</span>}
+                          </TableCell>
+                          <TableCell className="text-gray-400 text-xs sm:text-sm px-2 sm:px-3 hidden lg:table-cell">
+                            {item.nrKasoterminal?.toString() ?? <span className="text-neutral-600">—</span>}
+                          </TableCell>                      </TableRow>
                     ))
                   )}
                 </TableBody>

@@ -29,6 +29,7 @@ export interface myBms {
   brandmasterName: string;
   brandmasterLast: string;
   tourplannerId: string | null;
+  nrKasoterminal: number | null;
 }
 
 export interface myBmsTargets extends myBms {
