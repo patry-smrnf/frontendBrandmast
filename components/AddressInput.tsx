@@ -17,9 +17,10 @@ type AddressInputProps = {
   onChange: (newValue: string) => void;
   shopsResponse?: AllShopsResponse[];
   onChangeID: (newValue: number) => void;
+  showMap?: boolean;
 };
 
-export default function AddressInput({ value, onChange, shopsResponse = [], onChangeID }: AddressInputProps) {
+export default function AddressInput({ value, onChange, shopsResponse = [], onChangeID, showMap = true }: AddressInputProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   
   const normalizeString = useCallback((s: string | undefined | null) => {
@@ -41,16 +42,18 @@ export default function AddressInput({ value, onChange, shopsResponse = [], onCh
 
   return (
     <div className="relative w-full">
-      <div className="mb-6">
-        <MapPicker
-          shops={shopsResponse}
-          selectedAddress={value}
-          onSelect={(selectedAddress) => {
-            onChange(selectedAddress);
-            setShowSuggestions(false);
-          }}
-        />
-      </div>
+      {showMap && (
+        <div className="mb-6">
+          <MapPicker
+            shops={shopsResponse}
+            selectedAddress={value}
+            onSelect={(selectedAddress) => {
+              onChange(selectedAddress);
+              setShowSuggestions(false);
+            }}
+          />
+        </div>
+      )}
 
       <Label htmlFor="address" className="mb-1 text-gray-300">
         Address
@@ -67,7 +70,7 @@ export default function AddressInput({ value, onChange, shopsResponse = [], onCh
           // allow click selection before hiding
           setTimeout(() => setShowSuggestions(false), 150);
         }}
-        className="bg-zinc-700 text-white border-zinc-600 placeholder-gray-400 focus:border-green-500 focus:ring-green-500"
+        className="bg-zinc-800/50 text-white border-zinc-700 placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20 focus:ring-2 transition-all"
         aria-autocomplete="list"
         aria-controls="address-suggestions"
         aria-expanded={showSuggestions}

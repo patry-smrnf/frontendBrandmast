@@ -93,16 +93,20 @@ export default function MapPicker({
   const selectedShop = selectedId != null ? shops.find((s) => s.id === selectedId) ?? null : null;
 
   return (
-    <div className="h-64 w-full rounded-lg overflow-hidden border border-gray-600 mt-3 relative z-0">
+    <div className="h-full w-full rounded-lg overflow-hidden relative z-0">
       <MapContainer
         center={center}
         zoom={DEFAULT_ZOOM}
         style={{ height: "100%", width: "100%", zIndex: 0 }}
-        className="bg-gray-900 leaflet-container"
-        scrollWheelZoom={false}
+        className="bg-zinc-950 leaflet-container"
+        scrollWheelZoom={true}
         attributionControl={true}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+        <TileLayer 
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" 
+          attribution="&copy; OpenStreetMap contributors"
+          className="leaflet-tile-pane"
+        />
 
         <FlyToSelected selectedShop={selectedShop} selectZoom={SELECT_ZOOM} defaultCenter={center} defaultZoom={DEFAULT_ZOOM} />
 

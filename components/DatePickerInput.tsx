@@ -15,7 +15,7 @@ export default function DatePickerInput({ value, onChange }: { value: Date | und
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className={`w-full justify-start text-left font-normal ${value ? "text-white" : "text-gray-400"} bg-zinc-700 border-zinc-600`}
+          className={`w-full justify-start text-left font-normal ${value ? "text-white" : "text-gray-400"} bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 transition-all`}
         >
           {value ? format(value, "PPP") : "Pick a date"}
         </Button>
