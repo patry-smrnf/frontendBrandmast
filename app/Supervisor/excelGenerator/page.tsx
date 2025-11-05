@@ -53,10 +53,7 @@ const ExcelGeneratorBoard: React.FC = () => {
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
       errors.endDate = "End date must be after start date";
     }
-    
-    if (startDate && new Date(startDate) < new Date(today.toISOString().split('T')[0])) {
-      errors.startDate = "Start date cannot be in the past";
-    }
+
     
     return errors;
   }, [startDate, endDate, today]);
