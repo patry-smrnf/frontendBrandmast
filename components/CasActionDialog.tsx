@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -120,6 +120,28 @@ export function CasActionDialog({
     return splitActionIntoChunks(action.actionSince, action.actionUntil);
   }, [action.actionSince, action.actionUntil]);
 
+  // Track which CAS actions are activated (all enabled by default)
+  const [activatedActions, setActivatedActions] = useState<Set<number>>(() => {
+    return new Set(casActions.map((_, index) => index));
+  });
+
+  // Update activated actions when casActions change
+  useEffect(() => {
+    setActivatedActions(new Set(casActions.map((_, index) => index)));
+  }, [casActions.length]);
+
+  const toggleActivate = (index: number) => {
+    setActivatedActions((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
   const brandmasterName = [
     action.brandmasterImie?.trim(),
     action.brandmasterNazwisko?.trim(),
@@ -157,6 +179,7 @@ export function CasActionDialog({
             since: toISOStringInWarsawTimezone(casAction.since),
             until: toISOStringInWarsawTimezone(casAction.until),
             actionName: `[${index + 1}] ${actionName}`,
+            activate: activatedActions.has(index),
           }),
         })
       );
@@ -221,25 +244,53 @@ export function CasActionDialog({
 
             {/* CAS Action Chunks */}
             <Accordion type="single" collapsible className="space-y-2">
-              {casActions.map((casAction, index) => (
-                <AccordionItem
-                  key={index}
-                  value={`item-${index}`}
-                  className="border border-zinc-700/50 rounded-lg bg-neutral-800/40 overflow-hidden"
-                >
-                  <AccordionTrigger className="px-4 py-3 hover:bg-neutral-700/30 transition-colors [&[data-state=open]]:bg-neutral-700/40">
-                    <div className="flex items-center justify-between w-full pr-2">
-                      <span className="text-sm font-medium text-white truncate">
-                        {action.shopName}
-                      </span>
-                      <div className="flex items-center gap-2 text-xs text-zinc-400">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span className="font-semibold text-zinc-300">
-                          {casAction.hours}h
-                        </span>
+              {casActions.map((casAction, index) => {
+                const isActivated = activatedActions.has(index);
+                return (
+                  <AccordionItem
+                    key={index}
+                    value={`item-${index}`}
+                    className="border border-zinc-700/50 rounded-lg bg-neutral-800/40 overflow-hidden"
+                  >
+                    <AccordionTrigger className="px-4 py-3 hover:bg-neutral-700/30 transition-colors [&[data-state=open]]:bg-neutral-700/40">
+                      <div className="flex items-center gap-2.5 w-full pr-2">
+                        <label
+                          className="flex items-center cursor-pointer group shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isActivated}
+                            onChange={() => toggleActivate(index)}
+                            disabled={submitting}
+                            className="sr-only"
+                          />
+                          <div
+                            className={cn(
+                              "w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center shrink-0",
+                              isActivated
+                                ? "bg-green-600 border-green-500 shadow-sm shadow-green-600/20"
+                                : "bg-neutral-800 border-zinc-600 group-hover:border-zinc-500"
+                            )}
+                          >
+                            {isActivated && (
+                              <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                            )}
+                          </div>
+                        </label>
+                        <div className="flex items-center justify-between flex-1 min-w-0">
+                          <span className="text-sm font-medium text-white truncate">
+                            {action.shopName}
+                          </span>
+                          <div className="flex items-center gap-2 text-xs text-zinc-400 shrink-0">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="font-semibold text-zinc-300">
+                              {casAction.hours}h
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </AccordionTrigger>
+                    </AccordionTrigger>
                   <AccordionContent className="px-4 py-3 bg-neutral-850/50 space-y-2.5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                       <div className="flex items-start gap-2">
@@ -290,7 +341,8 @@ export function CasActionDialog({
                     </div>
                   </AccordionContent>
                 </AccordionItem>
-              ))}
+              );
+              })}
             </Accordion>
           </div>
 
