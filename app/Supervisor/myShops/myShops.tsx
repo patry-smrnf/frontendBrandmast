@@ -18,7 +18,7 @@ import ContextMenu from "@/components/contextMenu"
 import DarkLoadingPage from "@/components/LoadingScreen"
 import ErrorBoundary from "@/components/ErrorBoundary"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, MapPin, Store, Package, Upload, Trash2, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
+import { Search, MapPin, Store, Package, Upload, Trash2, AlertTriangle, CheckCircle, XCircle, Plus, ArrowLeft, Check } from "lucide-react"
 
 
 export default function MyShopsPage() {
@@ -37,6 +37,26 @@ export default function MyShopsPage() {
   // File upload
   const [open, setOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Events dialog state
+  const [eventsDialogOpen, setEventsDialogOpen] = useState(false)
+  const [events, setEvents] = useState<Array<{ idEvent: number; name: string; tpEventId: string }>>([])
+  const [eventsLoading, setEventsLoading] = useState(false)
+  
+  // Shops for selected event
+  interface EventShop {
+    streetAddress: string
+    geoLat: string
+    geoLng: string
+    tpIdent: string
+    tpShopId: string
+    name: string
+    eventId: string
+  }
+  const [selectedEvent, setSelectedEvent] = useState<{ tpEventId: string; name: string } | null>(null)
+  const [eventShops, setEventShops] = useState<EventShop[]>([])
+  const [selectedShops, setSelectedShops] = useState<Set<string>>(new Set())
+  const [shopsLoading, setShopsLoading] = useState(false)
 
   // Refs for cleanup
   const mountedRef = useRef(true)
@@ -155,6 +175,172 @@ export default function MyShopsPage() {
   const handleButtonClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  // Fetch events from backend
+  const handleFetchEvents = useCallback(async () => {
+    setEventsDialogOpen(true)
+    setEventsLoading(true)
+    setEvents([])
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+      const res = await apiFetch<Array<{ idEvent: number; name: string; tpEventId: string }>>('/api/general/allEvents', {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!Array.isArray(res)) {
+        throw new Error('Invalid response format: expected events array')
+      }
+
+      setEvents(res)
+    } catch (error: unknown) {
+      let errorMessage = "Nie udało się załadować wydarzeń"
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Operacja została przerwana z powodu przekroczenia czasu"
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
+      setEventsDialogOpen(false)
+    } finally {
+      setEventsLoading(false)
+    }
+  }, [])
+
+  // Handle event card click - fetch shops for event
+  const handleEventClick = useCallback(async (tpEventId: string, eventName: string) => {
+    setSelectedEvent({ tpEventId, name: eventName })
+    setShopsLoading(true)
+    setEventShops([])
+    setSelectedShops(new Set())
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+      const res = await apiFetch<EventShop[]>('/api/general/getShopsForEvent', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tpEventId }),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!Array.isArray(res)) {
+        throw new Error('Invalid response format: expected shops array')
+      }
+
+      // Check which shops are already added by comparing tpShopId
+      const existingShopIds = new Set(shopsData.map(shop => shop.tpShopId))
+      const allSelected = new Set<string>()
+      
+      res.forEach(shop => {
+        // Default to checked (selected) unless already exists
+        if (!existingShopIds.has(shop.tpShopId)) {
+          allSelected.add(shop.tpShopId)
+        }
+      })
+
+      setEventShops(res)
+      setSelectedShops(allSelected)
+    } catch (error: unknown) {
+      let errorMessage = "Nie udało się załadować sklepów"
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Operacja została przerwana z powodu przekroczenia czasu"
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
+      setSelectedEvent(null)
+    } finally {
+      setShopsLoading(false)
+    }
+  }, [shopsData])
+
+  // Handle shop checkbox toggle
+  const handleShopToggle = useCallback((tpShopId: string) => {
+    setSelectedShops(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(tpShopId)) {
+        newSet.delete(tpShopId)
+      } else {
+        newSet.add(tpShopId)
+      }
+      return newSet
+    })
+  }, [])
+
+  // Handle adding selected shops
+  const handleAddSelectedShops = useCallback(async () => {
+    if (selectedShops.size === 0 || !selectedEvent) {
+      toast.error("Nie wybrano żadnych sklepów do dodania")
+      return
+    }
+
+    setOperationLoading(true)
+
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+      // Filter selected shops and format them correctly
+      const shopsToAdd = eventShops
+        .filter(shop => selectedShops.has(shop.tpShopId))
+        .map(shop => ({
+          streetAddress: shop.streetAddress,
+          geoLat: shop.geoLat,
+          geoLng: shop.geoLng,
+          tpIdent: shop.tpIdent,
+          tpShopId: shop.tpShopId,
+          name: shop.name,
+          eventId: selectedEvent.tpEventId
+        }))
+      
+      const res = await apiFetch<messageRes>('/api/general/addShop', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shopsToAdd),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+      toast.success(res?.message || `Dodano ${selectedShops.size} sklepów pomyślnie`)
+      
+      // Close dialog and refresh data
+      setEventsDialogOpen(false)
+      setSelectedEvent(null)
+      window.location.reload()
+    } catch (error: unknown) {
+      let errorMessage = "Nie udało się dodać sklepów"
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Operacja została przerwana z powodu przekroczenia czasu"
+        } else {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error(errorMessage)
+    } finally {
+      setOperationLoading(false)
+    }
+  }, [selectedShops, selectedEvent, eventShops])
 
   const handleJsonUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -394,6 +580,16 @@ export default function MyShopsPage() {
                     {operationLoading ? "Przesyłanie..." : "Dodaj JSON"}
                   </Button>
 
+                  {/* Add Shops Button */}
+                  <Button 
+                    onClick={handleFetchEvents}
+                    disabled={operationLoading || eventsLoading}
+                    className="bg-green-600 hover:bg-green-500 text-white"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {eventsLoading ? "Ładowanie..." : "Dodaj Sklepy"}
+                  </Button>
+
                   {/* Delete Selected Button */}
                   {selected.length > 0 && (
                     <Button 
@@ -618,6 +814,193 @@ export default function MyShopsPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Events Dialog */}
+      <Dialog open={eventsDialogOpen} onOpenChange={(open) => {
+        setEventsDialogOpen(open)
+        if (!open) {
+          setSelectedEvent(null)
+          setEventShops([])
+          setSelectedShops(new Set())
+        }
+      }}>
+        <DialogContent className="max-w-md w-[calc(100vw-2rem)] max-h-[90vh] overflow-y-auto bg-zinc-950 border border-zinc-800/80 shadow-2xl p-2.5 sm:p-3">
+          {selectedEvent ? (
+            <>
+              {/* Shops View */}
+              <DialogHeader className="pb-1.5 border-b border-zinc-800/50 mb-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedEvent(null)
+                      setEventShops([])
+                      setSelectedShops(new Set())
+                    }}
+                    className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/50 rounded-md"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                  </Button>
+                  <DialogTitle className="text-sm font-medium text-zinc-100 flex items-center gap-1.5 flex-1 truncate">
+                    <Store className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                    <span className="truncate">{selectedEvent.name}</span>
+                  </DialogTitle>
+                </div>
+              </DialogHeader>
+
+              {shopsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="text-xs text-zinc-500">Ładowanie...</div>
+                </div>
+              ) : eventShops.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-zinc-500">
+                  <Store className="w-6 h-6 mb-1.5 opacity-40" />
+                  <p className="text-xs">Brak sklepów</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-1.5 max-h-[calc(90vh-140px)] overflow-y-auto pr-1">
+                    <AnimatePresence>
+                      {eventShops.map((shop, index) => {
+                        const isSelected = selectedShops.has(shop.tpShopId)
+                        const existingShopIds = new Set(shopsData.map(s => s.tpShopId))
+                        const isAlreadyAdded = existingShopIds.has(shop.tpShopId)
+
+                        return (
+                          <motion.div
+                            key={shop.tpShopId}
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                            transition={{ duration: 0.15, delay: index * 0.01 }}
+                          >
+                            <div 
+                              className={cn(
+                                "bg-zinc-900/60 border border-zinc-800/60 rounded-md transition-all duration-150 hover:border-zinc-700/80",
+                                isSelected && "border-blue-500/60 bg-blue-500/5",
+                                isAlreadyAdded && "opacity-50"
+                              )}
+                            >
+                              <div className="p-2">
+                                <div className="flex items-start gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleShopToggle(shop.tpShopId)}
+                                    disabled={isAlreadyAdded || operationLoading}
+                                    className="mt-0.5 w-3.5 h-3.5 accent-blue-500 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                      <span className="text-xs font-medium text-zinc-100 truncate">
+                                        {shop.name}
+                                      </span>
+                                      {isAlreadyAdded && (
+                                        <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded flex items-center gap-0.5 flex-shrink-0">
+                                          <Check className="w-2.5 h-2.5" />
+                                          <span>Dodany</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 space-y-0.5">
+                                      <div className="flex items-center gap-1">
+                                        <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                                        <span className="truncate">{shop.streetAddress}</span>
+                                      </div>
+                                      <div className="text-zinc-600 font-mono text-[9px]">
+                                        {shop.tpShopId.slice(0, 12)}...
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </AnimatePresence>
+                  </div>
+
+                  {selectedShops.size > 0 && (
+                    <div className="mt-2.5 pt-2.5 border-t border-zinc-800/50 flex items-center justify-between gap-2">
+                      <div className="text-xs text-zinc-400">
+                        <span className="text-zinc-300 font-medium">{selectedShops.size}</span> wybranych
+                      </div>
+                      <Button
+                        onClick={handleAddSelectedShops}
+                        disabled={operationLoading}
+                        size="sm"
+                        className="h-7 px-3 text-xs bg-emerald-600 hover:bg-emerald-500 text-white border-0"
+                      >
+                        <Plus className="w-3 h-3 mr-1.5" />
+                        {operationLoading ? "Dodawanie..." : "Dodaj"}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Events View */}
+              <DialogHeader className="pb-1.5 border-b border-zinc-800/50 mb-2">
+                <DialogTitle className="text-sm font-medium text-zinc-100 flex items-center gap-1.5">
+                  <Store className="w-3.5 h-3.5 text-blue-400" />
+                  Wydarzenia
+                </DialogTitle>
+              </DialogHeader>
+              
+              {eventsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="text-xs text-zinc-500">Ładowanie...</div>
+                </div>
+              ) : events.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-6 text-zinc-500">
+                  <Store className="w-6 h-6 mb-1.5 opacity-40" />
+                  <p className="text-xs">Brak wydarzeń</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 max-h-[calc(90vh-100px)] overflow-y-auto pr-1">
+                  <AnimatePresence>
+                    {events.map((event, index) => (
+                      <motion.div
+                        key={event.idEvent}
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 5 }}
+                        transition={{ duration: 0.15, delay: index * 0.01 }}
+                      >
+                        <div 
+                          className={cn(
+                            "bg-zinc-900/60 border border-zinc-800/60 rounded-md cursor-pointer transition-all duration-150 hover:border-zinc-700/80 hover:bg-zinc-800/40 active:scale-[0.98]",
+                            operationLoading && "opacity-50 cursor-not-allowed"
+                          )}
+                          onClick={() => !operationLoading && handleEventClick(event.tpEventId, event.name)}
+                        >
+                          <div className="p-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                <Store className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                                <span className="text-xs font-medium text-zinc-100 truncate">
+                                  {event.name}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-zinc-500 font-mono flex-shrink-0">
+                                #{event.idEvent}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   );
 }
