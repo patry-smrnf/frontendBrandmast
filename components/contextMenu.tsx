@@ -14,7 +14,8 @@ import {
   Store,
   Crosshair,
   Info,
-  Calendar
+  Calendar,
+  ClipboardClock 
 } from "lucide-react"; // optional icons
 import clsx from "clsx";
 
@@ -33,10 +34,12 @@ export default function ContextMenu({ closeMenu, type }: ContextMenuProps) {
             { label: "Statystyki", icon: BarChart2, route: "/Brandmaster/stats" },
             { label: "My Data", icon: Settings, route: "/Brandmaster/myData" },
             { label: "Helper", icon: Info, route: "/Brandmaster/helpMe" },
+            { label: "Historia Logowania", icon: ClipboardClock, route: "/MyActivity" },
             { label: "Dashboard", icon: LayoutDashboard, route: "/" }
             ]
       : type === "SV"
       ? [
+          { label: "Historia Logowania", icon: ClipboardClock, route: "/MyActivity" },
           { label: "Planer Akcji", icon: Calendar, route: "/Supervisor/actionPlanner" },
           { label: "Zarządzaj Shops", icon: Store, route: "/Supervisor/myShops" },
           { label: "Zarządzaj Targets", icon: Crosshair, route: "/Supervisor/myTargets" },

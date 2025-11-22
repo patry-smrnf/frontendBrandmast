@@ -49,6 +49,8 @@ export default function MyDataPage() {
           controller.abort();
         }, 15000);
 
+        const resMyLogs = await apiFetch('/api/common/')
+
         const res = await apiFetch<MyDataResponse>("/api/bm/getMyData", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
