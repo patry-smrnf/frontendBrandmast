@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import AnimatedTitle from "@/components/AnimatedTitle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,6 +27,16 @@ export default function RootLayout({
   return (
   <html lang="en" translate="no">    
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AnimatedTitle 
+          titles={[
+            "Hehehehe",
+            "Wstawiaj dyspo",
+            "Brandmastuj V2",
+            "Niewiem co tu pisac",
+          ]}
+          interval={3000}
+          enabled={true}
+        />
         {children}
         <Toaster richColors position="top-center" />
       </body>
