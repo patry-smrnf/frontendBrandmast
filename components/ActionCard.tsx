@@ -54,6 +54,8 @@ const MyActionCard: React.FC<Props> = ({ action }) => {
                 ? "bg-emerald-900/40 text-emerald-300"
                 : status === "DECLINED"
                 ? "bg-red-900/30 text-red-300"
+                : status === "EDITED SV"
+                ? "bg-blue-900/40 text-blue-300"
                 : "bg-yellow-900/40 text-yellow-300"
             }`}
           >

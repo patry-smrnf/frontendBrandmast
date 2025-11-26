@@ -126,6 +126,8 @@ const BrandmasterActionCardInner: React.FC<Props> = ({ action, onClick, onStatus
       ? "bg-emerald-900/40 text-emerald-300"
       : action.actionStatus === "DECLINED"
       ? "bg-red-900/30 text-red-300"
+      : action.actionStatus === "EDITED SV"
+      ? "bg-blue-900/40 text-blue-300"
       : "bg-yellow-900/40 text-yellow-300";
 
   return (
