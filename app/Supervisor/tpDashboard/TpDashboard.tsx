@@ -8,6 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import ContextMenu from "@/components/contextMenu";
 import TpActionCard from "@/components/TpActionCard";
 import TpActionDetailsDialog from "@/components/TpActionDetailsDialog";
@@ -80,6 +87,10 @@ export default function TpDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [selectedAction, setSelectedAction] = useState<TeamCasAction | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsProgress, setStatsProgress] = useState(0);
+  const [totalStats, setTotalStats] = useState<{ velo: number; glo: number } | null>(null);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -279,6 +290,91 @@ export default function TpDashboard() {
     }
   }, []);
 
+  interface ActionStatsResponse {
+    data: {
+      sample: {
+        currentAction: Array<{
+          brand: string;
+          model: string;
+          count: number;
+        }>;
+      };
+    };
+  }
+
+  const fetchTodayStats = useCallback(async () => {
+    // Filter actions with status "finished" or "started"
+    const relevantActions = actions.filter(
+      (action) => action.status === "finished" || action.status === "started"
+    );
+
+    if (relevantActions.length === 0) {
+      toast.info("Brak akcji ze statusem 'finished' lub 'started'");
+      setStatsDialogOpen(false);
+      return;
+    }
+
+    setStatsLoading(true);
+    setStatsProgress(0);
+    setTotalStats(null);
+
+    const totalActions = relevantActions.length;
+    let completed = 0;
+    const stats = { velo: 0, glo: 0 };
+
+    try {
+      // Process all actions
+      for (const action of relevantActions) {
+        try {
+          const response = await fetch("https://api.webform.tdy-apps.com/sample/stats", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              sample: {
+                hostessCode: action.users.ident,
+                currentAction: action.ident,
+              },
+            }),
+          });
+
+          const data: ActionStatsResponse = await response.json();
+
+          if (data.data?.sample?.currentAction) {
+            data.data.sample.currentAction.forEach((item) => {
+              const brandLower = item.brand.toLowerCase();
+              if (brandLower === "velo") {
+                stats.velo += item.count;
+              } else if (brandLower === "glo") {
+                stats.glo += item.count;
+              }
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to fetch stats for action ${action.ident}:`, error);
+        }
+
+        completed++;
+        setStatsProgress(Math.round((completed / totalActions) * 100));
+      }
+
+      setTotalStats(stats);
+    } catch (error) {
+      console.error("Failed to fetch today's stats:", error);
+      toast.error("Nie udało się pobrać statystyk");
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [actions]);
+
+  // Fetch stats when dialog opens
+  useEffect(() => {
+    if (statsDialogOpen && actions.length > 0) {
+      fetchTodayStats();
+    }
+  }, [statsDialogOpen, fetchTodayStats, actions.length]);
+
   if (loading) return <DarkLoadingPage />;
 
   if (error) {
@@ -338,6 +434,16 @@ export default function TpDashboard() {
           <div className="text-center mb-4">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Panel CAS</h1>
             <p className="text-sm text-zinc-400">Zarządzaj akcjami CAS</p>
+          </div>
+
+          {/* Stats Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={() => setStatsDialogOpen(true)}
+              className="px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-zinc-950"
+            >
+              Statystyki na dzis
+            </button>
           </div>
 
           {/* Filters - More Compact */}
@@ -442,6 +548,66 @@ export default function TpDashboard() {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
         />
+
+        {/* Today's Stats Dialog */}
+        <Dialog
+          open={statsDialogOpen}
+          onOpenChange={(open) => {
+            setStatsDialogOpen(open);
+            if (!open) {
+              setTotalStats(null);
+              setStatsProgress(0);
+            }
+          }}
+        >
+          <DialogContent
+            className="bg-zinc-950 border-zinc-800 text-white max-w-md w-[95vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DialogHeader>
+              <DialogTitle className="text-lg sm:text-xl font-bold text-white">
+                Statystyki na dzis
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 mt-4">
+              {statsLoading ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400">Pobieranie danych...</span>
+                    <span className="text-white font-semibold">{statsProgress}%</span>
+                  </div>
+                  <Progress value={statsProgress} className="h-3" />
+                  <p className="text-xs text-zinc-500 text-center">
+                    Przetwarzanie akcji...
+                  </p>
+                </div>
+              ) : totalStats ? (
+                <div className="space-y-3">
+                  <div className="bg-zinc-900/50 rounded-lg p-4 border border-zinc-800">
+                    <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+                      Suma statystyk
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-purple-500/10 border border-purple-500/30 rounded-md p-3">
+                        <p className="text-xs text-purple-400 font-medium mb-1">Velo</p>
+                        <p className="text-3xl font-bold text-white">{totalStats.velo - totalStats.glo}</p>
+                      </div>
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3">
+                        <p className="text-xs text-blue-400 font-medium mb-1">Glo</p>
+                        <p className="text-3xl font-bold text-white">{totalStats.glo}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-zinc-500">Brak danych do wyświetlenia</p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </ErrorBoundary>
   );
