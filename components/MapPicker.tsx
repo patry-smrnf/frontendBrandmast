@@ -42,10 +42,12 @@ export default function MapPicker({
   shops,
   selectedAddress,
   onSelect,
+  highlightAll,
 }: {
   shops: AllShopsResponse[];
   selectedAddress?: string;
   onSelect: (address: string) => void;
+  highlightAll?: boolean;
 }) {
   const center: LatLngExpression = [52.2305, 21.0069];
   const DEFAULT_ZOOM = 13;
@@ -122,7 +124,7 @@ export default function MapPicker({
             <Marker
               key={markerKey}
               position={[lat, lon]}
-              icon={isSelected ? redIcon : blueIcon}
+              icon={(/* highlight all shops when requested */ (typeof highlightAll !== 'undefined' && highlightAll) || isSelected) ? redIcon : blueIcon}
               eventHandlers={{
                 click: () => {
                   setSelectedId(shop.id);

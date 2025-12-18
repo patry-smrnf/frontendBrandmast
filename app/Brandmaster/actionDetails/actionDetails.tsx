@@ -157,6 +157,7 @@ export default function ActionDetails() {
   // Map expansion state
   const [mapExpanded, setMapExpanded] = useState(false);
   const [mapVisible, setMapVisible] = useState(true);
+  const [last48hEnabled, setLast48hEnabled] = useState(false);
   const [selectedEventFilter, setSelectedEventFilter] = useState<string>("all");
 
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -194,7 +195,7 @@ export default function ActionDetails() {
       return;
     }
 
-    apiFetch<AllShopsResponse[]>("/api/general/allShops").then((res) => setShopsData(res)).catch((err) => toast.error(String(err)));
+    // shops fetching moved to dedicated effect that respects last48h toggle
 
 
     async function fetchActionDetails(id: number) {
@@ -255,6 +256,14 @@ export default function ActionDetails() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]); // intentionally only when search params change
+
+  // Fetch shops list; switch between allShops and last48hShops when toggled
+  useEffect(() => {
+    const endpoint = last48hEnabled ? "/api/general/last48hShops" : "/api/general/allShops";
+    apiFetch<AllShopsResponse[]>(endpoint)
+      .then((res) => setShopsData(res))
+      .catch((err) => toast.error(String(err)));
+  }, [last48hEnabled]);
 
   const submitForm = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -673,6 +682,21 @@ export default function ActionDetails() {
                       <h3 className="text-sm font-semibold text-gray-200 truncate">Location Map</h3>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center mr-2">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={last48hEnabled}
+                          onClick={() => setLast48hEnabled((s) => !s)}
+                          className={`inline-flex items-center gap-2 px-2 py-1 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${last48hEnabled ? 'bg-gradient-to-r from-purple-600 to-purple-500' : 'bg-zinc-800/60'}`}
+                        >
+                          <span className={`relative inline-block h-5 w-9 rounded-full transition-all duration-200 ${last48hEnabled ? 'bg-transparent' : 'bg-transparent'}`}>
+                            <span className={`absolute left-0 top-0 h-5 w-5 rounded-full transform transition-transform duration-200 ${last48hEnabled ? 'translate-x-[18px] bg-white' : 'translate-x-0 bg-white/80'}`}></span>
+                          </span>
+                          <span className="hidden sm:inline-flex text-xs font-medium text-gray-100 select-none">Last 48h</span>
+                          <span className="inline-flex sm:hidden text-xs font-medium text-gray-100 select-none">48h</span>
+                        </button>
+                      </div>
                       {/* Event Filter */}
                       {uniqueEvents.length > 0 && (
                         <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>
@@ -758,6 +782,7 @@ export default function ActionDetails() {
                       <MapPicker
                         shops={filteredShopsForMap}
                         selectedAddress={shopAddress}
+                        highlightAll={last48hEnabled}
                         onSelect={(selectedAddress) => {
                           setShopAddress(selectedAddress);
                           const shop = shopsData?.find((s) => s.address === selectedAddress);
