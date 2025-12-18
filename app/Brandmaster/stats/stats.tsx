@@ -223,7 +223,7 @@ const StatsPage: React.FC = () => {
             body: JSON.stringify({
               sample: {
                 hostessCode: brandmasterRes.accountLogin,
-                currentAction: null
+                currentAction: "null"
               }
             }),
             signal: controller.signal,
