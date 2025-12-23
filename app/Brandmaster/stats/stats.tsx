@@ -176,6 +176,15 @@ const StatsPage: React.FC = () => {
   const [editingKey, setEditingKey] = useState<keyof LegacyTargetType | null>(null);
   const [inputValue, setInputValue] = useState<number>(0);
 
+  // Action sample stats state
+  interface ActionSampleStats {
+    hilo: number;
+    hiloPlus: number;
+    velo: number;
+  }
+  const [actionSampleStats, setActionSampleStats] = useState<Record<string, ActionSampleStats>>({});
+  const [loadingActionStats, setLoadingActionStats] = useState<Record<string, boolean>>({});
+
   // Refs for cleanup
   const mountedRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -391,6 +400,84 @@ const StatsPage: React.FC = () => {
 
   const handleCancel = () => {
     setEditingKey(null);
+  };
+
+  // Fetch sample stats for a specific action
+  const fetchActionSampleStats = async (actionIdent: string) => {
+    if (!brandmasterData || loadingActionStats[actionIdent]) return;
+
+    setLoadingActionStats(prev => ({ ...prev, [actionIdent]: true }));
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch('https://api.webform.tdy-apps.com/sample/stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sample: {
+            hostessCode: brandmasterData.accountLogin,
+            currentAction: actionIdent
+          }
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch action stats: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const currentAction = data?.data?.sample?.currentAction || [];
+
+      // Process and aggregate the data
+      let hiloCount = 0;
+      let hiloPlusCount = 0;
+      let veloTotal = 0;
+
+      currentAction.forEach((item: Item) => {
+        const modelLower = item.model.toLowerCase();
+        const brandLower = item.brand.toLowerCase();
+        
+        if (modelLower === 'hilo') {
+          hiloCount += item.count || 0;
+        } else if (modelLower === 'hilo+') {
+          hiloPlusCount += item.count || 0;
+        } else if (brandLower === 'velo') {
+          veloTotal += item.count || 0;
+        }
+      });
+
+      // Subtract hilo and hilo+ from velo total
+      const veloAdjusted = Math.max(0, veloTotal - hiloCount - hiloPlusCount);
+
+      setActionSampleStats(prev => ({ 
+        ...prev, 
+        [actionIdent]: {
+          hilo: hiloCount,
+          hiloPlus: hiloPlusCount,
+          velo: veloAdjusted
+        }
+      }));
+    } catch (error: unknown) {
+      console.error('Failed to fetch action sample stats:', error);
+      if (error instanceof Error && error.name !== 'AbortError') {
+        toast.error('Nie udało się załadować statystyk akcji');
+      }
+      setActionSampleStats(prev => ({ 
+        ...prev, 
+        [actionIdent]: {
+          hilo: 0,
+          hiloPlus: 0,
+          velo: 0
+        }
+      }));
+    } finally {
+      setLoadingActionStats(prev => ({ ...prev, [actionIdent]: false }));
+    }
   };
 
   // Loading and error states
@@ -619,7 +706,20 @@ const StatsPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Accordion type="single" collapsible className="space-y-2">
+              <Accordion 
+                type="single" 
+                collapsible 
+                className="space-y-2"
+                onValueChange={(value) => {
+                  if (value) {
+                    const index = parseInt(value.replace('item-', ''));
+                    const action = casActionsData?.actions[index];
+                    if (action && actionSampleStats[action.ident] === undefined && !loadingActionStats[action.ident]) {
+                      fetchActionSampleStats(action.ident);
+                    }
+                  }
+                }}
+              >
                 {casActionsData?.actions.map((action, index) => (
                   <AccordionItem 
                     key={action.ident} 
@@ -678,6 +778,54 @@ const StatsPage: React.FC = () => {
                           <span className="text-xs text-zinc-500 uppercase tracking-wide">ID Akcji</span>
                           <span className="text-white font-mono text-sm">{action.ident}</span>
                         </div>
+                      </div>
+                      
+                      {/* Sample Stats Section */}
+                      <div className="mt-4 pt-4 border-t border-zinc-700/30">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Package className="w-4 h-4 text-zinc-400" />
+                          <span className="text-xs text-zinc-500 uppercase tracking-wide">Raporty z akcji</span>
+                          {loadingActionStats[action.ident] && (
+                            <RefreshCw className="w-3 h-3 animate-spin text-zinc-400" />
+                          )}
+                        </div>
+                        {loadingActionStats[action.ident] ? (
+                          <p className="text-sm text-zinc-400">Ładowanie...</p>
+                        ) : actionSampleStats[action.ident] ? (
+                          (() => {
+                            const stats = actionSampleStats[action.ident];
+                            const hasData = stats.hilo > 0 || stats.hiloPlus > 0 || stats.velo > 0;
+                            
+                            if (!hasData) {
+                              return <p className="text-sm text-zinc-400">Brak danych z tej akcji</p>;
+                            }
+                            
+                            return (
+                              <div className="space-y-2">
+                                {stats.hilo > 0 && (
+                                  <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-zinc-700/20">
+                                    <span className="text-white font-medium text-sm">Hilo</span>
+                                    <span className="text-white font-semibold">{stats.hilo}</span>
+                                  </div>
+                                )}
+                                {stats.hiloPlus > 0 && (
+                                  <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-zinc-700/20">
+                                    <span className="text-white font-medium text-sm">Hilo+</span>
+                                    <span className="text-white font-semibold">{stats.hiloPlus}</span>
+                                  </div>
+                                )}
+                                {stats.velo > 0 && (
+                                  <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-zinc-700/20">
+                                    <span className="text-white font-medium text-sm">Velo</span>
+                                    <span className="text-white font-semibold">{stats.velo}</span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <p className="text-sm text-zinc-400">Kliknij, aby załadować statystyki próbek</p>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

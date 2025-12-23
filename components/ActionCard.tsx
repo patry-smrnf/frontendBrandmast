@@ -20,9 +20,10 @@ import type { MyAction } from "@/types/apiStuff/responses/MyAction.types";
 
 interface Props {
   action: MyAction;
+  onDelete?: (actionId: number) => void;
 }
 
-const MyActionCard: React.FC<Props> = ({ action }) => { 
+const MyActionCard: React.FC<Props> = ({ action, onDelete }) => { 
   
   const { id, status, since, until, shop, event } = action;
 
@@ -32,7 +33,12 @@ const MyActionCard: React.FC<Props> = ({ action }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idAction: actionId }),
-      }).then((res) => toast.success(res.message)).catch((err) => toast.error(String(err)));
+      })
+      .then((res) => {
+        toast.success(res.message);
+        onDelete?.(actionId);
+      })
+      .catch((err) => toast.error(String(err)));
   }
 
   // 🎨 Gradient based on event name

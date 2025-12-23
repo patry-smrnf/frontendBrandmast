@@ -682,21 +682,31 @@ export default function ActionDetails() {
                       <h3 className="text-sm font-semibold text-gray-200 truncate">Location Map</h3>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="flex items-center mr-2">
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={last48hEnabled}
-                          onClick={() => setLast48hEnabled((s) => !s)}
-                          className={`inline-flex items-center gap-2 px-2 py-1 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500/40 ${last48hEnabled ? 'bg-gradient-to-r from-purple-600 to-purple-500' : 'bg-zinc-800/60'}`}
-                        >
-                          <span className={`relative inline-block h-5 w-9 rounded-full transition-all duration-200 ${last48hEnabled ? 'bg-transparent' : 'bg-transparent'}`}>
-                            <span className={`absolute left-0 top-0 h-5 w-5 rounded-full transform transition-transform duration-200 ${last48hEnabled ? 'translate-x-[18px] bg-white' : 'translate-x-0 bg-white/80'}`}></span>
-                          </span>
-                          <span className="hidden sm:inline-flex text-xs font-medium text-gray-100 select-none">Last 48h</span>
-                          <span className="inline-flex sm:hidden text-xs font-medium text-gray-100 select-none">48h</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={last48hEnabled}
+                        onClick={() => setLast48hEnabled((s) => !s)}
+                        className={`relative inline-flex items-center h-7 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
+                          last48hEnabled 
+                            ? 'w-14 bg-purple-600 shadow-lg shadow-purple-500/30' 
+                            : 'w-14 bg-zinc-700/60'
+                        }`}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white shadow-md transform transition-all duration-300 ${
+                          last48hEnabled ? 'translate-x-7' : 'translate-x-0'
+                        }`} />
+                        <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-semibold transition-opacity duration-200 ${
+                          last48hEnabled 
+                            ? 'text-white opacity-100' 
+                            : 'text-gray-400 opacity-0'
+                        }`}>
+                          48h
+                        </span>
+                      </button>
+                      <span className="text-xs font-medium text-gray-300 hidden sm:inline select-none">
+                        48h
+                      </span>
                       {/* Event Filter */}
                       {uniqueEvents.length > 0 && (
                         <Select value={selectedEventFilter} onValueChange={setSelectedEventFilter}>

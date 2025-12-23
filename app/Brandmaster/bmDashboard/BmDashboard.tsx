@@ -331,7 +331,13 @@ export default function BmDashboard() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {group.map((a) => (
-                      <MyActionCard key={a.id} action={a} />
+                      <MyActionCard 
+                        key={a.id} 
+                        action={a} 
+                        onDelete={(actionId) => {
+                          setActions((prev) => prev.filter((action) => action.id !== actionId));
+                        }}
+                      />
                     ))}
                   </div>
                 </div>
