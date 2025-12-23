@@ -18,9 +18,9 @@ export default function SnowParticles({
   // Adjust particle count based on intensity
   const count = useMemo(() => {
     switch (intensity) {
-      case "low": return 30;
-      case "medium": return 50;
-      case "high": return 80;
+      case "low": return 60;
+      case "medium": return 100;
+      case "high": return 150;
       default: return particleCount;
     }
   }, [intensity, particleCount]);
@@ -45,13 +45,15 @@ export default function SnowParticles({
       setSnowflakes(
         Array.from({ length: count }, (_, i) => {
           const sway = Math.random() * 30 - 15; // -15px to 15px horizontal drift
+          // Distribute more evenly across the screen to avoid clustering
+          const left = (i / count) * 100 + (Math.random() * 2 - 1); // More even distribution with slight randomness
           return {
             id: i,
-            left: Math.random() * 100, // 0-100%
-            delay: Math.random() * 5, // 0-5s delay
-            duration: 10 + Math.random() * 10, // 10-20s fall duration
-            size: 2 + Math.random() * 3, // 2-5px
-            opacity: 0.3 + Math.random() * 0.5, // 0.3-0.8
+            left: Math.max(0, Math.min(100, left)), // Clamp to 0-100%
+            delay: Math.random() * 2, // 0-2s delay
+            duration: 10 + Math.random() * 20, // 10-30s fall duration
+            size: 2 + Math.random() * 5, // 4-10px
+            opacity: 0.2 + Math.random() * 0.5, // 0.3-0.8
             swayEnd: sway, // Final horizontal position
           };
         })
