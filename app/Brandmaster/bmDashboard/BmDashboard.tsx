@@ -9,6 +9,7 @@ import { apiFetch } from "@/utils/apiFetch";
 import MyActionCard from "@/components/ActionCard";
 import ContextMenu from "@/components/contextMenu";
 import DarkLoadingPage from "@/components/LoadingScreen";
+import SnowParticles from "@/components/SnowParticles";
 
 import {
   Select,
@@ -199,8 +200,9 @@ export default function BmDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-zinc-950 text-gray-100 px-6 py-10 flex flex-col items-center">
-        <div className="w-full max-w-5xl space-y-8">
+      <div className="min-h-screen bg-gradient-to-b from-zinc-950 to-zinc-950 text-gray-100 px-6 py-10 flex flex-col items-center relative">
+        <SnowParticles intensity="medium" />
+        <div className="w-full max-w-5xl space-y-8 relative z-10">
           {/* Header - Compact Stats Box */}
           <div className="flex justify-center">
             <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-800 rounded-xl sm:rounded-2xl px-4 py-3 sm:px-8 sm:py-5 shadow-2xl backdrop-blur-sm w-full sm:w-auto">
@@ -324,7 +326,7 @@ export default function BmDashboard() {
               groupedByDate.map(([dateKey, group]) => (
                 <div
                   key={dateKey}
-                  className="border border-zinc-800 rounded-xl bg-zinc-900/50 p-5 space-y-4"
+                  className="border border-zinc-800 rounded-xl bg-zinc-900/50 p-5 space-y-4 backdrop-blur-xs"
                 >
                   <h3 className="text-gray-300 text-sm font-medium border-b border-zinc-800 pb-2">
                     {formatDate(dateKey)}

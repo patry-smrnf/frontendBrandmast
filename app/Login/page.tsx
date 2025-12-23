@@ -13,6 +13,7 @@ import { apiFetch } from "@/utils/apiFetch";
 import type { AuthResponse } from "@/types/apiStuff/responses/AuthResponse";
 
 import { toast } from "sonner";
+import SnowParticles from "@/components/SnowParticles";
 
 export default function Login() {
 
@@ -54,9 +55,10 @@ export default function Login() {
     );
 
     return (
-        <div className="min-h-screen flex items-center justify-center  bg-gradient-to-b from-zinc-950 via-zinc-950 to-black px-4">
-            <div className="flex flex-col items-center">
-                <Card className="w-full max-w-md p-8 shadow-2xl rounded-2xl border-zinc-800/60  bg-zinc-900/60 backdrop-blur-md ">
+        <div className="min-h-screen flex items-center justify-center  bg-gradient-to-b from-zinc-950 via-zinc-950 to-black px-4 relative">
+            <SnowParticles intensity="medium" />
+            <div className="flex flex-col items-center relative z-10">
+                <Card className="w-full max-w-md p-8 shadow-2xl rounded-2xl border-zinc-900/60  bg-zinc-900/20 backdrop-blur-xs ">
                     <CardHeader>
                         <CardTitle className="text-3xl font-bold text-center text-white">Brandmastuj</CardTitle>
                     </CardHeader>

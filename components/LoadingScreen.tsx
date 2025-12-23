@@ -3,6 +3,7 @@ import { motion, useAnimation } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Moon, Sparkles } from "lucide-react";
+import SnowParticles from "@/components/SnowParticles";
 
 // Dark modern loading page using Tailwind + shadcn/ui + framer-motion + lucide-react
 // Drop this file into a Next.js / React app that already uses Tailwind and shadcn/ui.
@@ -44,7 +45,8 @@ export default function DarkLoadingPage({
   }, [controls, externalProgress, showProgress]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900/10 via-zinc-950 to-black text-slate-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900/10 via-zinc-950 to-black text-slate-100 relative">
+      <SnowParticles intensity="medium" />
       {/* subtle star-field background */}
       <svg className="pointer-events-none absolute inset-0 -z-10 opacity-30" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
         <defs>
@@ -60,7 +62,7 @@ export default function DarkLoadingPage({
         initial={{ opacity: 0, y: 8 }}
         animate={controls}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="w-full max-w-md p-6 md:p-10"
+        className="w-full max-w-md p-6 md:p-10 relative z-10"
         aria-busy={progress < 100}
         aria-live="polite"
       >
