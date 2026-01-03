@@ -47,11 +47,12 @@ export default function SnowParticles({
           const sway = Math.random() * 30 - 15; // -15px to 15px horizontal drift
           // Distribute more evenly across the screen to avoid clustering
           const left = (i / count) * 100 + (Math.random() * 2 - 1); // More even distribution with slight randomness
+          const duration = 10 + Math.random() * 20; // 10-30s fall duration
           return {
             id: i,
             left: Math.max(0, Math.min(100, left)), // Clamp to 0-100%
-            delay: Math.random() * 2, // 0-2s delay
-            duration: 10 + Math.random() * 20, // 10-30s fall duration
+            delay: -Math.random() * duration, // Start animation at random point in cycle to pre-populate screen
+            duration,
             size: 2 + Math.random() * 5, // 4-10px
             opacity: 0.2 + Math.random() * 0.5, // 0.3-0.8
             swayEnd: sway, // Final horizontal position
@@ -126,4 +127,3 @@ export default function SnowParticles({
     </div>
   );
 }
-
