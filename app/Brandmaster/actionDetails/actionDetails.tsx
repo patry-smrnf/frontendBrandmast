@@ -166,6 +166,7 @@ export default function ActionDetails() {
 
   const [actionDetails, setActionDetails] = useState<MyAction>();
   const [shopsData, setShopsData] = useState<AllShopsResponse[]>();
+  const [myActions, setMyActions] = useState<MyAction[]>([]);
 
   // Form data
   const [shopAddress, setShopAddress] = useState("");
@@ -264,6 +265,13 @@ export default function ActionDetails() {
       .then((res) => setShopsData(res))
       .catch((err) => toast.error(String(err)));
   }, [last48hEnabled]);
+
+  // Fetch user's existing actions to mark on calendar
+  useEffect(() => {
+    apiFetch<MyAction[]>("/api/bm/myActions")
+      .then((res) => setMyActions(res))
+      .catch((err) => console.error("Failed to fetch myActions", err));
+  }, []);
 
   const submitForm = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
@@ -476,6 +484,12 @@ export default function ActionDetails() {
     return shopsData.filter((shop) => shop.event?.name === selectedEventFilter);
   }, [shopsData, selectedEventFilter]);
 
+  const busyDates = React.useMemo(() => {
+    return myActions
+      .map((a) => (a.since ? new Date(a.since) : null))
+      .filter((d): d is Date => d !== null && !isNaN(d.getTime()));
+  }, [myActions]);
+
   return (
     <>
       <div ref={menuRef} className="fixed top-4 right-4 z-50" onClick={(e) => e.stopPropagation()}>
@@ -610,7 +624,7 @@ export default function ActionDetails() {
                       <CalendarIcon className="w-4 h-4" />
                       Event Date
                     </Label>
-                    <DatePickerInput value={actionDate} onChange={setActionDate} />
+                    <DatePickerInput value={actionDate} onChange={setActionDate} busyDates={busyDates} />
                   </div>
 
                   <div>
