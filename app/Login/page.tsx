@@ -60,7 +60,7 @@ export default function Login() {
             <div className="flex flex-col items-center relative z-10">
                 <Card className="w-full max-w-md p-8 shadow-2xl rounded-2xl border-zinc-900/60  bg-zinc-900/20 backdrop-blur-xs ">
                     <CardHeader>
-                        <CardTitle className="text-3xl font-bold text-center text-white">Brandmastuj</CardTitle>
+                        <CardTitle className="text-3xl font-bold text-center text-white">Brandmastuj v2</CardTitle>
                     </CardHeader>
                     <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
