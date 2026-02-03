@@ -90,7 +90,13 @@ export default function TpDashboard() {
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsProgress, setStatsProgress] = useState(0);
-  const [totalStats, setTotalStats] = useState<{ velo: number; glo: number } | null>(null);
+  const [totalStats, setTotalStats] = useState<{ 
+    velo: number; 
+    gloHilo: number; 
+    gloHiloPlus: number; 
+    gloHyperPro: number; 
+    gloTotal: number;
+  } | null>(null);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -320,7 +326,13 @@ export default function TpDashboard() {
 
     const totalActions = relevantActions.length;
     let completed = 0;
-    const stats = { velo: 0, glo: 0 };
+    const stats = { 
+      velo: 0, 
+      gloHilo: 0, 
+      gloHiloPlus: 0, 
+      gloHyperPro: 0, 
+      gloTotal: 0 
+    };
 
     try {
       // Process all actions
@@ -344,10 +356,22 @@ export default function TpDashboard() {
           if (data.data?.sample?.currentAction) {
             data.data.sample.currentAction.forEach((item) => {
               const brandLower = item.brand.toLowerCase();
+              const modelLower = item.model.toLowerCase();
+              
               if (brandLower === "velo") {
                 stats.velo += item.count;
               } else if (brandLower === "glo") {
-                stats.glo += item.count;
+                // Track total Glo
+                stats.gloTotal += item.count;
+                
+                // Track individual models
+                if (modelLower === "hilo") {
+                  stats.gloHilo += item.count;
+                } else if (modelLower === "hilo+") {
+                  stats.gloHiloPlus += item.count;
+                } else if (modelLower === "hyper pro") {
+                  stats.gloHyperPro += item.count;
+                }
               }
             });
           }
@@ -588,14 +612,31 @@ export default function TpDashboard() {
                     <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
                       Suma statystyk
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
+                      {/* Velo */}
                       <div className="bg-purple-500/10 border border-purple-500/30 rounded-md p-3">
                         <p className="text-xs text-purple-400 font-medium mb-1">Velo</p>
-                        <p className="text-3xl font-bold text-white">{totalStats.velo - totalStats.glo}</p>
+                        <p className="text-3xl font-bold text-white">{totalStats.velo - totalStats.gloTotal}</p>
                       </div>
-                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3">
-                        <p className="text-xs text-blue-400 font-medium mb-1">Glo</p>
-                        <p className="text-3xl font-bold text-white">{totalStats.glo}</p>
+                      
+                      {/* Glo Models */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3">
+                          <p className="text-xs text-blue-400 font-medium mb-1">Glo Hilo</p>
+                          <p className="text-2xl font-bold text-white">{totalStats.gloHilo}</p>
+                        </div>
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3">
+                          <p className="text-xs text-blue-400 font-medium mb-1">Glo Hilo+</p>
+                          <p className="text-2xl font-bold text-white">{totalStats.gloHiloPlus}</p>
+                        </div>
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-md p-3">
+                          <p className="text-xs text-blue-400 font-medium mb-1">Glo Hyper Pro</p>
+                          <p className="text-2xl font-bold text-white">{totalStats.gloHyperPro}</p>
+                        </div>
+                        <div className="bg-blue-600/20 border-2 border-blue-500/50 rounded-md p-3">
+                          <p className="text-xs text-blue-300 font-semibold mb-1">Total Glo</p>
+                          <p className="text-2xl font-bold text-white">{totalStats.gloTotal}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
