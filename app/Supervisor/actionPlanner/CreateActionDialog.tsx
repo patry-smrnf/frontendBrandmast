@@ -72,6 +72,7 @@ function formatTimeInput(value: string): string {
 
 export default function CreateActionDialog({ open, onOpenChange, onSuccess }: Props) {
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   const [selectedShop, setSelectedShop] = useState<string>("");
   const [selectedShopId, setSelectedShopId] = useState<number>(0);
   const [selectedShopEventId, setSelectedShopEventId] = useState<string>("");
@@ -221,6 +222,23 @@ export default function CreateActionDialog({ open, onOpenChange, onSuccess }: Pr
     setSelectedDates(prev => prev.filter((_, i) => i !== index));
   };
 
+  const selectWholeMonth = () => {
+    if (!calendarMonth) return;
+
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+
+    const dates: Date[] = [];
+    const cursor = new Date(year, month, 1);
+
+    while (cursor.getMonth() === month) {
+      dates.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    setSelectedDates(dates);
+  };
+
   // Normalize string for search
   const normalizeString = (s: string | undefined | null) => {
     if (!s) return "";
@@ -263,6 +281,17 @@ export default function CreateActionDialog({ open, onOpenChange, onSuccess }: Pr
               <Label htmlFor="date" className="text-sm font-medium text-gray-300">
                 Daty <span className="text-xs text-gray-500">(wybierz wiele)</span>
               </Label>
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="bg-zinc-800 border-zinc-700 hover:bg-zinc-700 text-gray-200 whitespace-nowrap"
+                  onClick={selectWholeMonth}
+                >
+                  Zaznacz cały miesiąc
+                </Button>
+              </div>
               <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -284,6 +313,8 @@ export default function CreateActionDialog({ open, onOpenChange, onSuccess }: Pr
                 <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-800" align="start">
                   <Calendar
                     mode="single"
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
                     selected={undefined}
                     onSelect={handleDateToggle}
                     initialFocus
